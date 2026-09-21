@@ -11,4 +11,6 @@ stderr and restore logs under one explicit output directory. A successful
 local run on a short fixture is a functional runner check, not a performance
 claim. The S3 experiment requires the pinned reference/candidate builds, a
 frozen synthetic fixture, seven or more balanced A/B/C triplets per scenario,
-and successful restore validation on the designated benchmark host.
+and successful restore validation on the designated benchmark host. Timed
+variants are rotated as ABC, BCA and CAB across iterations; scenario arguments
+should include `-v` so the headline comparison matches the documented workflow.

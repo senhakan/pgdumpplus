@@ -86,8 +86,10 @@ directory-parallel restores and disabled-stat behavior. S2 is DONE.
 S3 preparation (2026-09-21): added `scripts/benchmark_stats.py` and the
 data-free scenario template under `docs/benchmarks/`. The runner records
 reference/candidate hashes, raw A/B/C wall/CPU/RSS/archive/stderr data, paired
-bootstrap intervals and optional disposable restore validation. A short local
-Docker smoke produced 21 raw runs and a summary, but is not a performance claim.
+bootstrap intervals and optional disposable restore validation. Timed variants
+now rotate ABC/BCA/CAB across iterations and the template uses `-v` for the
+headline workflow. A local Docker functional smoke produced 63 raw runs with
+the rotated order and a summary, but is not a performance claim.
 SSH key authentication to the designated benchmark host is unavailable in this
 environment, so the required host-scale experiment and S3 completion are
 pending; no private endpoint or credentials were written to the repository.

@@ -212,7 +212,12 @@ def main() -> int:
                     command.insert(1, "--stats")
                 command += ["-f", str(warm_archive)]
                 run_checked(command, warm)
-            for iteration in range(1, ns.iterations + 1):
+        # Rotate the three variants so each iteration has a different first
+        # runner. This limits simple thermal/cache drift without changing the
+        # paired A/B/C comparison in the summary.
+        for iteration in range(1, ns.iterations + 1):
+            order = labels[(iteration - 1) % len(labels):] + labels[:(iteration - 1) % len(labels)]
+            for label, binary, enabled in order:
                 run_id = f"{safe_name}-{label}-{iteration:02d}"
                 archive = out / "archives" / run_id
                 stderr = out / "stderr" / f"{run_id}.log"

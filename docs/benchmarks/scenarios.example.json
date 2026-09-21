@@ -1,14 +1,14 @@
 [
   {
     "name": "full-custom-z5",
-    "args": ["-Fc", "-Z", "5"]
+    "args": ["-v", "-Fc", "-Z", "5"]
   },
   {
     "name": "plain-copy",
-    "args": ["-Fp"]
+    "args": ["-v", "-Fp"]
   },
   {
     "name": "directory-parallel",
-    "args": ["-Fd", "-j", "4", "-Z", "5"]
+    "args": ["-v", "-Fd", "-j", "4", "-Z", "5"]
   }
 ]
