@@ -10,11 +10,12 @@ and controlled data exports.**
 
 See [CHANGELOG.md](CHANGELOG.md) for release history and migration notes.
 
-`pg_dumpplus` extends PostgreSQL's `pg_dump` with **row-level filtering** and
-**column-level masking**. Export recent records, select a tenant's data, or
-replace selected values in one command—with familiar dump formats and standard
-restore tools. It is designed for developers, database administrators, data
-engineers, staging refreshes, and support exports.
+`pg_dumpplus` extends PostgreSQL's `pg_dump` with **row-level filtering**,
+**column-level masking**, and **export statistics**. Its selective-export
+workflow is intentionally close to the practical parts of Oracle Data Pump
+`expdp`: choose table rows, transform selected columns during export, and see
+what each completed table actually produced—while retaining PostgreSQL dump
+formats and standard restore tools.
 
 ```bash
 pg_dumpplus -d mydb -Fc \
@@ -42,6 +43,8 @@ for your database and review the restored dump before sharing it.
 - **Choose rows, not just tables.** Add SQL conditions with `--where`, similar
   to Oracle Data Pump's `QUERY` option.
 - **Mask as you export.** Use built-in presets or your own SQL expressions.
+- **Measure each export.** Use `--stats` to report actual exported rows,
+  serialized size, and table duration as each table completes.
 - **Keep your workflow.** Custom (`-Fc`), plain SQL (`-Fp`), directory (`-Fd`),
   parallel dumps (`-j`), and `--inserts` are supported.
 - **Keep a consistent snapshot.** Filtering and masking run inside the dump's
@@ -296,6 +299,13 @@ pg_dumpplus: table "public.orders": rows=125438, size=84.00 MB, duration=2m 14s
 
 Sizes use binary units (`B`, `KB`, `MB`, `GB`, `TB`). Schema, index, sequence
 and other metadata entries do not produce table statistics.
+
+Animated synthetic example:
+
+![CLI export statistics preview](docs/assets/cli-stats-preview.gif)
+
+The preview shows the `expdp`-style operational feedback available through
+`--stats`; it contains no real database or production timings.
 
 ## Restore
 
