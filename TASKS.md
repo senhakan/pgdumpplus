@@ -12,8 +12,8 @@ Historical release claims below are evidence ledger entries, not current state.
 | ID | Status | Dependency / required result |
 | --- | --- | --- |
 | S0 | DONE | Design/source review and linked execution plan; documentation checks recorded below |
-| S1 | IN_PROGRESS | COPY rows/bytes prototype and PG17 runtime evidence; INSERT/parallel/major matrix remain S2 |
-| S2 | BLOCKED | S1; INSERT/parallel/PG13–18 correctness and restored-value evidence |
+| S1 | DONE | COPY rows/bytes prototype and PG13–18/OS matrix evidence complete; INSERT/parallel remain S2 |
+| S2 | READY | INSERT/parallel/PG13–18 correctness and restored-value evidence |
 | S3 | BLOCKED | S2; repeated normal/disabled/enabled export benchmarks on designated test host |
 | S4 | BLOCKED | S3; Turkish MD/HTML report, then explicit owner continuation decision |
 | S5 | BLOCKED | Positive S4 decision; docs and platform/package verification |
@@ -36,13 +36,26 @@ A disposable Docker PostgreSQL 17.5 fixture reported `stats_empty` 0/0,
 custom archive restore returned 7 rows. `--stats` alone emits the completion line
 without `-v`. The isolated suite now includes an independent COPY row/byte oracle;
 the full suite still needs a matching PG17 client environment after this change.
-S1 remains IN_PROGRESS until that regression run and failed-write check pass.
+The first full matrix exposed a PostgreSQL 13-only logging API mismatch; commit
+`4d7b36a` adds the PG13 `pg_logging_set_level` compatibility branch. A fresh
+pristine PG13.23 source now patches and compiles `pg_dumpplus`/`pg_restore`
+successfully. An explicit unwritable-output test returns non-zero and reports
+`Permission denied`. Focused post-fix CI [35574551592](https://github.com/senhakan/pgdumpplus/actions/runs/35574551592)
+passed plan, PG17.11 EL9 build, Ubuntu 24.04 DEB build, isolated PG17 verify,
+DEB/RPM smoke and Rocky 9 smoke. Full candidate matrix
+[35575004840](https://github.com/senhakan/pgdumpplus/actions/runs/35575004840) passed
+all PG13.23–18.6 verify/build/package/smoke jobs across EL8/9/10 and
+Ubuntu 22.04/24.04/Debian 12; its dispatch-only attestation verification is
+separate from the completed build/test jobs. S1 is complete. Exact next step:
+start S2 for INSERT, parallel and cross-major runtime coverage; no release or
+benchmark claim is made by S1.
 
 CI profile update (2026-09-21): `.github/workflows/build.yml` now uses PG17 +
 EL9 + Ubuntu 24.04 for normal pushes and manual development runs. Version tags
 select the full PG13–18, EL8/9/10 and Ubuntu/Debian matrix; `full_matrix=true` is
-the manual candidate-preparation switch. This change does not claim full-matrix
-evidence until a tag or full manual run succeeds.
+the manual candidate-preparation switch. Full-matrix evidence is recorded in
+run 35575004840 above; the dispatch-only release-attestation step does not
+publish a release and is not part of the S1 runtime/package test claim.
 
 Focused CI evidence: [35570968301](https://github.com/senhakan/pgdumpplus/actions/runs/35570968301)
 for commit `c084168` completed successfully. It ran exactly PG17.11 verify,
