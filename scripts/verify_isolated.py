@@ -60,7 +60,8 @@ INSERT INTO mask_edges VALUES
     (1, NULL), (2, ''), (3, '1'), (4, '12'), (5, '123'), (6, '1234'), (7, '12345');
 CREATE TABLE stats_probe (id integer, payload text);
 INSERT INTO stats_probe SELECT g, 'row-' || g FROM generate_series(1,7) g;
-CREATE TABLE stats_zero (id integer GENERATED ALWAYS AS IDENTITY);
+CREATE TABLE stats_zero (id integer);
+ALTER TABLE stats_zero DROP COLUMN id;
 INSERT INTO stats_zero DEFAULT VALUES;
 INSERT INTO stats_zero DEFAULT VALUES;
 CREATE TABLE partitioned_events (id integer, secret text) PARTITION BY RANGE (id);
