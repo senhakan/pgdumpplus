@@ -1,6 +1,8 @@
 # Export-time table statistics: implementation and decision plan
 
-Status: PLANNED, implementation not authorized by this planning request.
+Status: IN PROGRESS. S1/S2 implementation and cross-version verification are
+complete; the required host-scale timing experiment and owner continuation
+decision remain before release integration.
 Owner-facing requirement and decision report language: Turkish.
 Reviewed: 2026-09-21; repository baseline: `5369a348ad95d39c81839569892e3890850f9f31`.
 Manifest at review: project 2.1.1, PostgreSQL 13–18, existing x86_64 targets.
