@@ -1,7 +1,30 @@
 # Execution tracker
 
-Updated: 2026-09-18. Specification: [PLAN.md](PLAN.md).
+Updated: 2026-09-21. Specification: [PLAN.md](PLAN.md).
 Statuses: READY, IN_PROGRESS, BLOCKED (dependency stated), DONE (evidence required).
+
+## Current request: export-time statistics planning
+
+Specification: [export-stats.md](docs/design/export-stats.md).
+Local review baseline `5369a348ad95d39c81839569892e3890850f9f31`, manifest 2.1.1.
+Historical release claims below are evidence ledger entries, not current state.
+
+| ID | Status | Dependency / required result |
+| --- | --- | --- |
+| S0 | DONE | Design/source review and linked execution plan; documentation checks recorded below |
+| S1 | BLOCKED | User implementation authorization; compiled COPY/CLI/lifecycle proof |
+| S2 | BLOCKED | S1; INSERT/parallel/PG13–18 correctness and restored-value evidence |
+| S3 | BLOCKED | S2; repeated normal/disabled/enabled export benchmarks on designated test host |
+| S4 | BLOCKED | S3; Turkish MD/HTML report, then explicit owner continuation decision |
+| S5 | BLOCKED | Positive S4 decision; docs and platform/package verification |
+| S6 | BLOCKED | S5 and applicable release authority; verified release |
+
+S0 evidence (2026-09-21): inspected local patched PG17.11 COPY/INSERT/archiver paths
+and official libpq result documentation; `git diff --check` and local document-link
+checks pass. No stats implementation, benchmark, server mutation or publication
+performed. Performance expectations are unmeasured. Exact next step: when the user
+authorizes implementation, start S1 using the linked design; proceed through S4
+and present actual timing/restore evidence before asking for continuation.
 
 ## Verified baseline
 
@@ -98,6 +121,10 @@ Never infer a test count or mark an ongoing run passed. Keep private evidence
 outside Git; put only sanitized conclusions here.
 
 ## Resume instructions
+
+For the current statistics request, follow S0–S6 above. Implementation is not yet
+authorized; even after authorization, stop at the S4 owner decision as specified.
+The C2 roadmap below remains separate and is not the next task for this request.
 
 Next implementation task: complete the security review of
 `docs/design/pseudonymization.md` (C2-design), then implement typed

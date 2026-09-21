@@ -5,7 +5,10 @@ README describes product usage, not authorization or future feature completion.
 
 - Repository: https://github.com/senhakan/pgdumpplus
 - Product/command: pg_dumpplus; native package prefix: pgdumpplus.
-- Default next implementation task: first READY task, A1. Follow dependencies.
+- Current stats request: read docs/design/export-stats.md and the S0–S6 queue in
+  TASKS.md. Planning alone does not authorize implementation. After authorized
+  experiments, S4 requires the owner's continuation decision based on timing data.
+- Otherwise choose the applicable READY task in TASKS.md; follow dependencies.
 - Preserve compiled client installation: no client-side Python/compiler or server extension.
 - Python patches upstream C; revised patches require pristine source trees.
 - Preserve user edits, existing databases, installed clients and cleaned Git history.

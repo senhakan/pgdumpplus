@@ -4,6 +4,18 @@ Baseline: 2026-09-17, commit f3285c3.
 Canonical repository: https://github.com/senhakan/pgdumpplus
 This is a specification for future work, not a claim that the features exist.
 
+## Current feature planning addendum (2026-09-21)
+
+The export-time `--stats` specification is in
+[docs/design/export-stats.md](docs/design/export-stats.md). It defines actual
+exported rows/bytes, a single flag, implementation tasks S0–S6 and mandatory
+normal-export versus stats-enabled timing experiments. Implementation is pending
+authorization; after the experiment, the owner must decide whether to continue
+before release integration/publication. Earlier pre-count/source-size proposals
+are superseded. For this feature, use the S-task queue rather than the historical
+default task below. Historical baseline/release statements below are dated;
+the manifest currently records project 2.1.1, not the original v1.2.0 baseline.
+
 ## Product contract
 
 A separately installed compiled PostgreSQL dump client with row filtering and
