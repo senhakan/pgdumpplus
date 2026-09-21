@@ -104,8 +104,8 @@ claim. Turkish Markdown and HTML decision reports were generated in a private
 run directory and are intentionally not tracked. S3 is DONE; S4 awaits the
 owner's continuation decision before README/release integration.
 
-Focused CI evidence: [35582271013](https://github.com/senhakan/pgdumpplus/actions/runs/35582271013)
-completed successfully after the public-information audit fix. It ran exactly
+Focused CI evidence: [35585515209](https://github.com/senhakan/pgdumpplus/actions/runs/35585515209)
+completed successfully after the benchmark evidence update. It ran exactly
 PG17.11 verify, EL9 RPM build/smoke, Ubuntu 24.04 DEB build/smoke and Rocky
 Linux 9 package execution. This run was a development validation; no release
 was published.
