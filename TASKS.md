@@ -13,8 +13,8 @@ Historical release claims below are evidence ledger entries, not current state.
 | --- | --- | --- |
 | S0 | DONE | Design/source review and linked execution plan; documentation checks recorded below |
 | S1 | DONE | COPY rows/bytes prototype and PG13–18/OS matrix evidence complete; INSERT/parallel remain S2 |
-| S2 | IN_PROGRESS | INSERT/parallel/PG13–18 correctness and restored-value evidence |
-| S3 | BLOCKED | S2; repeated normal/disabled/enabled export benchmarks on designated test host |
+| S2 | DONE | INSERT/parallel/PG13–18 correctness and restored-value evidence |
+| S3 | IN_PROGRESS | Reproducible A/B/C benchmark runner and designated-host experiment |
 | S4 | BLOCKED | S3; Turkish MD/HTML report, then explicit owner continuation decision |
 | S5 | BLOCKED | Positive S4 decision; docs and platform/package verification |
 | S6 | BLOCKED | S5 and applicable release authority; verified release |
@@ -73,6 +73,24 @@ The first full-matrix attempt [35579585876](https://github.com/senhakan/pgdumppl
 exposed a patcher anchor difference in PG15/16 `CreateArchive` signatures;
 version-shape-specific anchors now pass local PG13/15/16/17 patcher checks and
 the full matrix will be rerun.
+
+S2 completion evidence (2026-09-21): focused CI [35579250167](https://github.com/senhakan/pgdumpplus/actions/runs/35579250167)
+passed the expanded isolated suite (52 cases), PG17 build/package/restore and
+Rocky 9 smoke. Full matrix [35580451097](https://github.com/senhakan/pgdumpplus/actions/runs/35580451097)
+passed all PG13.23–18.6 build, verify, package and EL8/9/10 plus Ubuntu/Debian
+smoke jobs; the dispatch release-attestation step also completed successfully.
+The suite now covers COPY and INSERT/column-insert SQL byte oracles, tuple
+counts, rows-per-insert, zero-dumpable-column DEFAULT VALUES, custom/plain/
+directory-parallel restores and disabled-stat behavior. S2 is DONE.
+
+S3 preparation (2026-09-21): added `scripts/benchmark_stats.py` and the
+data-free scenario template under `docs/benchmarks/`. The runner records
+reference/candidate hashes, raw A/B/C wall/CPU/RSS/archive/stderr data, paired
+bootstrap intervals and optional disposable restore validation. A short local
+Docker smoke produced 21 raw runs and a summary, but is not a performance claim.
+SSH key authentication to the designated `10.6.60.21` host is unavailable in
+this environment, so the required host-scale experiment and S3 completion are
+pending; no private endpoint or credentials were written to the repository.
 
 Focused CI evidence: [35570968301](https://github.com/senhakan/pgdumpplus/actions/runs/35570968301)
 for commit `c084168` completed successfully. It ran exactly PG17.11 verify,
