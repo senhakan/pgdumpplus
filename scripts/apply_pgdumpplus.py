@@ -1269,7 +1269,23 @@ find_unquoted_char(const char *s, char sep)
             "\t}\n"
             "\tPQclear(res);\n\n\t/* Do this to ensure we've pumped libpq back to idle state */",
             "ds-copy-report")
-        if PG13:
+        if "sync_method);" in t:
+            t = rep_once(t,
+                "\tfout = CreateArchive(filename, archiveFormat, compression_spec,\n"
+                "\t\t\t\t\t\t dosync, archiveMode, setupDumpWorker, sync_method);",
+                "\tfout = CreateArchive(filename, archiveFormat, compression_spec,\n"
+                "\t\t\t\t\t\t dosync, archiveMode, setupDumpWorker, sync_method);\n\n"
+                "\tfout->pgdp_stats_enabled = pgdp_stats;",
+                "dm-stats-enabled-pg17")
+        elif "compression_spec," in t:
+            t = rep_once(t,
+                "\tfout = CreateArchive(filename, archiveFormat, compression_spec,\n"
+                "\t\t\t\t\t\t dosync, archiveMode, setupDumpWorker);",
+                "\tfout = CreateArchive(filename, archiveFormat, compression_spec,\n"
+                "\t\t\t\t\t\t dosync, archiveMode, setupDumpWorker);\n\n"
+                "\tfout->pgdp_stats_enabled = pgdp_stats;",
+                "dm-stats-enabled-pg16")
+        else:
             t = rep_once(t,
                 "\tfout = CreateArchive(filename, archiveFormat, compressLevel, dosync,\n"
                 "\t\t\t\t\t\t archiveMode, setupDumpWorker);",
@@ -1277,14 +1293,6 @@ find_unquoted_char(const char *s, char sep)
                 "\t\t\t\t\t\t archiveMode, setupDumpWorker);\n\n"
                 "\tfout->pgdp_stats_enabled = pgdp_stats;",
                 "dm-stats-enabled-pg13")
-        else:
-            t = rep_once(t,
-                "\tfout = CreateArchive(filename, archiveFormat, compression_spec,\n"
-                "\t\t\t\t\t\t dosync, archiveMode, setupDumpWorker, sync_method);",
-                "\tfout = CreateArchive(filename, archiveFormat, compression_spec,\n"
-                "\t\t\t\t\t\t dosync, archiveMode, setupDumpWorker, sync_method);\n\n"
-                "\tfout->pgdp_stats_enabled = pgdp_stats;",
-                "dm-stats-enabled")
         t = rep_once(t,
             "\tint\t\t\trows_this_statement = 0;\n\n\t/* Temporary allows to access to foreign tables to dump data */",
             "\tint\t\t\trows_this_statement = 0;\n\n"

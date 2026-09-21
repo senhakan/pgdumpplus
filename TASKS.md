@@ -69,6 +69,10 @@ an independent SQL-byte oracle. Local PG17.11 COPY, INSERT, column INSERT,
 parallel directory and restore checks pass; pristine PG13.23 and PG17.11
 patcher/idempotence checks pass and both generated clients compile. S2 remains
 IN_PROGRESS until the post-change isolated CI and full PG13–18 matrix pass.
+The first full-matrix attempt [35579585876](https://github.com/senhakan/pgdumpplus/actions/runs/35579585876)
+exposed a patcher anchor difference in PG15/16 `CreateArchive` signatures;
+version-shape-specific anchors now pass local PG13/15/16/17 patcher checks and
+the full matrix will be rerun.
 
 Focused CI evidence: [35570968301](https://github.com/senhakan/pgdumpplus/actions/runs/35570968301)
 for commit `c084168` completed successfully. It ran exactly PG17.11 verify,
