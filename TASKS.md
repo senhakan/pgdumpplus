@@ -92,10 +92,11 @@ SSH key authentication to the designated benchmark host is unavailable in this
 environment, so the required host-scale experiment and S3 completion are
 pending; no private endpoint or credentials were written to the repository.
 
-Focused CI evidence: [35570968301](https://github.com/senhakan/pgdumpplus/actions/runs/35570968301)
-for commit `c084168` completed successfully. It ran exactly PG17.11 verify,
-EL9 RPM build/smoke, Ubuntu 24.04 DEB build/smoke and Rocky Linux 9 package
-execution. No full-matrix release run has been claimed.
+Focused CI evidence: [35582271013](https://github.com/senhakan/pgdumpplus/actions/runs/35582271013)
+completed successfully after the public-information audit fix. It ran exactly
+PG17.11 verify, EL9 RPM build/smoke, Ubuntu 24.04 DEB build/smoke and Rocky
+Linux 9 package execution. This run was a development validation; no release
+was published.
 
 ## Verified baseline
 
