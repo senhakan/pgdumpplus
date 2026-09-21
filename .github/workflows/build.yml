@@ -32,7 +32,7 @@ jobs:
       build_els: ${{ steps.pick.outputs.build_els }}
       deb_dist: ${{ steps.pick.outputs.deb_dist }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: pick
         env:
           REQUESTED_VERSIONS: ${{ inputs.pg_versions }}
@@ -112,7 +112,7 @@ jobs:
       image: almalinux:${{ matrix.el }}
     name: pg_dumpplus ${{ matrix.pg_version }} (EL${{ matrix.el }})
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build dependencies
         run: dnf install -y gcc make bison flex perl zlib-devel openssl-devel rpm-build python3 tar gzip diffutils binutils
@@ -157,7 +157,7 @@ jobs:
       image: ${{ matrix.dist.image }}
     name: deb ${{ matrix.pg_version }} (${{ matrix.dist.tag }})
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build dependencies
         run: |
@@ -190,7 +190,7 @@ jobs:
     container:
       image: almalinux:${{ matrix.el }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: pg_dumpplus-${{ matrix.pg_version }}-el${{ matrix.el }}-linux-x86_64
@@ -233,7 +233,7 @@ jobs:
     container:
       image: ${{ matrix.dist.image }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: pg_dumpplus-${{ matrix.pg_version }}-${{ matrix.dist.tag }}
@@ -269,7 +269,7 @@ jobs:
       image: rockylinux/rockylinux:${{ matrix.rocky }}
     name: Rocky Linux ${{ matrix.rocky }} / pg_dumpplus ${{ matrix.pg_version }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: pg_dumpplus-${{ matrix.pg_version }}-el${{ matrix.rocky }}-linux-x86_64
@@ -296,7 +296,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: all-dist
