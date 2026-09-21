@@ -110,6 +110,18 @@ PG17.11 verify, EL9 RPM build/smoke, Ubuntu 24.04 DEB build/smoke and Rocky
 Linux 9 package execution. This run was a development validation; no release
 was published.
 
+Final decision experiment evidence (2026-09-21): on the owner's Rocky Linux
+9.5/PostgreSQL 17.8 test server, the same PG17.11 vanilla/candidate clients ran
+7 A/B/C repetitions for 1M, 10M and 100M synthetic rows using `-v -Fc -Z5`.
+Median C/B deltas were -0.04%, -3.40% and -0.15%; archive sizes were identical
+between stats-disabled and stats-enabled candidates. A same-row payload probe
+and a 1,000-table probe were also run (63 and 21 runs): no monotonic row/byte
+runtime penalty was observed, while stats adds approximately 55 bytes of stderr
+per completed table. Nine representative archives passed `pg_restore --list`.
+The private Turkish MD/HTML report records raw evidence and limits; no raw
+archives, logs, endpoint, credentials or real data are tracked. S4 report is
+complete and awaits explicit owner continuation before release work.
+
 ## Verified baseline
 
 - Canonical repo senhakan/pgdumpplus; command pg_dumpplus.
