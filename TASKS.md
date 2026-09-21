@@ -32,6 +32,11 @@ select the full PG13–18, EL8/9/10 and Ubuntu/Debian matrix; `full_matrix=true`
 the manual candidate-preparation switch. This change does not claim full-matrix
 evidence until a tag or full manual run succeeds.
 
+Focused CI evidence: [35570968301](https://github.com/senhakan/pgdumpplus/actions/runs/35570968301)
+for commit `c084168` completed successfully. It ran exactly PG17.11 verify,
+EL9 RPM build/smoke, Ubuntu 24.04 DEB build/smoke and Rocky Linux 9 package
+execution. No full-matrix release run has been claimed.
+
 ## Verified baseline
 
 - Canonical repo senhakan/pgdumpplus; command pg_dumpplus.
