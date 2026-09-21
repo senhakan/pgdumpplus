@@ -1140,12 +1140,28 @@ find_unquoted_char(const char *s, char sep)
             '\t\t\tcase 29:\t\t\t\tpgdp_plan_format = pg_strdup(optarg); pgdp_plan_format_set = true; break;\n'
             '\t\t\tcase 30:\t\t\t\tprintf("pg_dumpplus project %s; PostgreSQL %s; source %s\\n", PGDUMPPLUS_PROJECT_VERSION, PG_VERSION, PGDUMPPLUS_SOURCE_COMMIT); exit(0);\n',
             '\t\t\tcase 31:\t\t\t\tpgdp_profile_path = pg_strdup(optarg); break;\\n'
-            '\t\t\tcase 32:\t\t\t\tpgdp_stats = true; pg_logging_increase_verbosity(); break;\\n',
+            '\t\t\tcase 32:\t\t\t\tpgdp_stats = true;\n'
+            '#if PG_VERSION_NUM >= 140000\n'
+            '\t\t\t\tpg_logging_increase_verbosity();\n'
+            '#else\n'
+            '\t\t\t\tpg_logging_set_level(PG_LOG_INFO);\n'
+            '#endif\n'
+            '\t\t\t\tbreak;\\n',
             "dm-case")
         t = t.replace(r"pgdp_profile_path = pg_strdup(optarg); break;\n",
                       "pgdp_profile_path = pg_strdup(optarg); break;\n")
+        # The profile case historically used a literal ``\\n`` sentinel in
+        # the replacement text.  Normalize the newly added stats case too,
+        # otherwise PG13 sees the two characters ``\\n`` in generated C.
+        t = t.replace("\t\t\t\tbreak;\\n", "\t\t\t\tbreak;\n")
         t = t.replace(r"pgdp_stats = true; pg_logging_increase_verbosity(); break;\n",
-                      "pgdp_stats = true; pg_logging_increase_verbosity(); break;\n")
+                      "pgdp_stats = true;\n"
+                      "#if PG_VERSION_NUM >= 140000\n"
+                      "pg_logging_increase_verbosity();\n"
+                      "#else\n"
+                      "pg_logging_set_level(PG_LOG_INFO);\n"
+                      "#endif\n"
+                      "break;\n")
         # 5d: help — --where satirindan once
         where_help = 'printf(_("  --where=PATTERN:FILTER   dump only rows matching SQL FILTER for\\n"'
         t = rep_once(t, where_help,
