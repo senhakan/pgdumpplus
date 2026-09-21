@@ -14,8 +14,8 @@ Historical release claims below are evidence ledger entries, not current state.
 | S0 | DONE | Design/source review and linked execution plan; documentation checks recorded below |
 | S1 | DONE | COPY rows/bytes prototype and PG13–18/OS matrix evidence complete; INSERT/parallel remain S2 |
 | S2 | DONE | INSERT/parallel/PG13–18 correctness and restored-value evidence |
-| S3 | IN_PROGRESS | Reproducible A/B/C benchmark runner and designated-host experiment |
-| S4 | BLOCKED | S3; Turkish MD/HTML report, then explicit owner continuation decision |
+| S3 | DONE | Rocky 9 + PostgreSQL 17 A/B/C benchmark and restore evidence complete |
+| S4 | IN_PROGRESS | Turkish MD/HTML report prepared privately; explicit owner continuation decision pending |
 | S5 | BLOCKED | Positive S4 decision; docs and platform/package verification |
 | S6 | BLOCKED | S5 and applicable release authority; verified release |
 
@@ -90,9 +90,19 @@ bootstrap intervals and optional disposable restore validation. Timed variants
 now rotate ABC/BCA/CAB across iterations and the template uses `-v` for the
 headline workflow. A local Docker functional smoke produced 63 raw runs with
 the rotated order and a summary, but is not a performance claim.
-SSH key authentication to the designated benchmark host is unavailable in this
-environment, so the required host-scale experiment and S3 completion are
-pending; no private endpoint or credentials were written to the repository.
+The user narrowed the decision experiment to Rocky Linux 9 + PostgreSQL 17.
+That scope was executed in a disposable Rocky 9 container against a synthetic
+PostgreSQL 17 fixture; no private endpoint, credential or real dataset was used.
+
+S3 completion evidence (2026-09-21): a Rocky 9 RPM was built from pristine
+PostgreSQL 17.11 sources with patcher atomicity/idempotence checks. The runner
+completed 21 warm-ups, 63 balanced A/B/C timed runs and 63 disposable restores;
+all validation queries returned 250000 rows. Median C/B deltas were -1.15%
+(custom -Z5), +13.18% (plain COPY) and +3.31% (directory -j4 -Z5). These are
+warm-cache, local synthetic measurements rather than a general performance
+claim. Turkish Markdown and HTML decision reports were generated in a private
+run directory and are intentionally not tracked. S3 is DONE; S4 awaits the
+owner's continuation decision before README/release integration.
 
 Focused CI evidence: [35582271013](https://github.com/senhakan/pgdumpplus/actions/runs/35582271013)
 completed successfully after the public-information audit fix. It ran exactly
