@@ -191,11 +191,11 @@ jobs:
       image: almalinux:${{ matrix.el }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: pg_dumpplus-${{ matrix.pg_version }}-el${{ matrix.el }}-linux-x86_64
           path: packages
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: upgrade-fixture-${{ matrix.pg_version }}-el${{ matrix.el }}
           path: packages
@@ -234,7 +234,7 @@ jobs:
       image: ${{ matrix.dist.image }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: pg_dumpplus-${{ matrix.pg_version }}-${{ matrix.dist.tag }}
           path: packages
@@ -270,7 +270,7 @@ jobs:
     name: Rocky Linux ${{ matrix.rocky }} / pg_dumpplus ${{ matrix.pg_version }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: pg_dumpplus-${{ matrix.pg_version }}-el${{ matrix.rocky }}-linux-x86_64
           path: packages
@@ -297,7 +297,7 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: all-dist
           pattern: pg_dumpplus-*
