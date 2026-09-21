@@ -26,6 +26,12 @@ performed. Performance expectations are unmeasured. Exact next step: when the us
 authorizes implementation, start S1 using the linked design; proceed through S4
 and present actual timing/restore evidence before asking for continuation.
 
+CI profile update (2026-09-21): `.github/workflows/build.yml` now uses PG17 +
+EL9 + Ubuntu 24.04 for normal pushes and manual development runs. Version tags
+select the full PG13–18, EL8/9/10 and Ubuntu/Debian matrix; `full_matrix=true` is
+the manual candidate-preparation switch. This change does not claim full-matrix
+evidence until a tag or full manual run succeeds.
+
 ## Verified baseline
 
 - Canonical repo senhakan/pgdumpplus; command pg_dumpplus.

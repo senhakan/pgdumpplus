@@ -16,6 +16,17 @@ are superseded. For this feature, use the S-task queue rather than the historica
 default task below. Historical baseline/release statements below are dated;
 the manifest currently records project 2.1.1, not the original v1.2.0 baseline.
 
+### CI execution profiles
+
+Pushes to `main` and ordinary development runs verify only the PG17 tested minor,
+the EL9 RPM build used by the test environment, and the Ubuntu 24.04 DEB/runtime
+path. This keeps feedback short without claiming that unbuilt majors or platforms
+are covered by that run. A version tag selects the complete manifest matrix:
+PG13–18, EL8/9/10 and Ubuntu/Debian targets. The release job consumes only those
+full-matrix artifacts. Manual dispatch keeps the development profile by default;
+`full_matrix=true` selects the requested full-matrix versions for candidate
+preparation. A normal development push never silently broadens its matrix.
+
 ## Product contract
 
 A separately installed compiled PostgreSQL dump client with row filtering and
