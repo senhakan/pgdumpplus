@@ -60,6 +60,9 @@ INSERT INTO mask_edges VALUES
     (1, NULL), (2, ''), (3, '1'), (4, '12'), (5, '123'), (6, '1234'), (7, '12345');
 CREATE TABLE stats_probe (id integer, payload text);
 INSERT INTO stats_probe SELECT g, 'row-' || g FROM generate_series(1,7) g;
+CREATE TABLE stats_zero (id integer GENERATED ALWAYS AS IDENTITY);
+INSERT INTO stats_zero DEFAULT VALUES;
+INSERT INTO stats_zero DEFAULT VALUES;
 CREATE TABLE partitioned_events (id integer, secret text) PARTITION BY RANGE (id);
 CREATE TABLE partitioned_events_1 PARTITION OF partitioned_events FOR VALUES FROM (1) TO (4);
 INSERT INTO partitioned_events VALUES (1, 'alpha'), (2, 'beta'), (3, 'gamma');
@@ -320,6 +323,59 @@ class Suite:
         )
         self.equal(int(filtered_match.group(2)), expected_filtered)
 
+    def stats_insert(self):
+        """--stats counts INSERT tuples and emitted SQL bytes independently."""
+        path, result = self.dump([
+            "--stats", "--inserts", "--rows-per-insert=1", "-t", "public.stats_probe",
+        ], fmt="p")
+        match = re.search(
+            r'table "public\.stats_probe": rows=(\d+), bytes=(\d+)',
+            result.stderr,
+        )
+        if not match:
+            raise AssertionError("missing INSERT stats line: " + result.stderr)
+        self.equal(match.group(1), "7")
+        expected = sum(
+            len((f"INSERT INTO public.stats_probe VALUES ({i}, 'row-{i}');\n").encode())
+            for i in range(1, 8)
+        ) + 2  # the existing INSERT data callback terminator (two newlines)
+        self.equal(int(match.group(2)), expected)
+        self.restore(path, "p")
+        self.equal(self.sql(self.target, "SELECT count(*) FROM stats_probe"), "7")
+
+        _, column_result = self.dump([
+            "--stats", "--inserts", "--column-inserts", "--rows-per-insert=3",
+            "-t", "public.stats_probe",
+        ], fmt="p")
+        column_match = re.search(
+            r'table "public\.stats_probe": rows=(\d+), bytes=(\d+)',
+            column_result.stderr,
+        )
+        if not column_match:
+            raise AssertionError("missing column INSERT stats line: " + column_result.stderr)
+        self.equal(column_match.group(1), "7")
+        expected_column = 0
+        for start in (1, 4, 7):
+            rows = range(start, min(start + 3, 8))
+            expected_column += len(
+                ("INSERT INTO public.stats_probe (id, payload) VALUES\n" +
+                 ",\n".join(f"\t({i}, 'row-{i}')" for i in rows) + ";\n").encode()
+            )
+        self.equal(int(column_match.group(2)), expected_column + 2)
+
+        _, zero_result = self.dump([
+            "--stats", "--inserts", "-t", "public.stats_zero",
+        ], fmt="p")
+        zero_match = re.search(
+            r'table "public\.stats_zero": rows=(\d+), bytes=(\d+)',
+            zero_result.stderr,
+        )
+        if not zero_match:
+            raise AssertionError("missing DEFAULT VALUES stats line: " + zero_result.stderr)
+        self.equal(zero_match.group(1), "2")
+        self.equal(int(zero_match.group(2)),
+                   2 * len(b"INSERT INTO public.stats_zero DEFAULT VALUES;\n") + 2)
+
     def checks(self):
         self.case("unfiltered dump matches upstream (random guards normalized)", self.unfiltered)
         for fmt, extra in (("c", []), ("p", []), ("p", ["--inserts"]),
@@ -366,6 +422,7 @@ class Suite:
         self.case("dry-run option combinations fail clearly", self.dry_run_option_errors)
         self.case("compiled JSON profile resolves and restores", self.profile_roundtrip)
         self.case("COPY export stats count rows and bytes", self.stats_copy)
+        self.case("INSERT export stats count tuples and SQL bytes", self.stats_insert)
         self.case("concurrent update keeps one dump snapshot", self.snapshot_consistency)
         self.case("preset on non-text column fails before export", lambda: self.error(
             "--mask=public.customers:birth_year:all", "yields text"))

@@ -18,6 +18,10 @@ PATCH_FILES = (
     "src/fe_utils/string_utils.c",
     "src/include/fe_utils/string_utils.h",
     "src/bin/pg_dump/pg_dump.c",
+    "src/bin/pg_dump/pg_backup.h",
+    "src/bin/pg_dump/pg_backup_archiver.h",
+    "src/bin/pg_dump/pg_backup_archiver.c",
+    "src/bin/pg_dump/pg_backup_null.c",
     "src/bin/pg_dump/Makefile",
 )
 
@@ -1227,6 +1231,21 @@ find_unquoted_char(const char *s, char sep)
             "\tchar\t\t*copybuf;",
             "ds-copy-locals")
         t = rep_once(t,
+            "\tPGresult   *res;\n\tint\t\t\tret;\n"
+            "\tuint64\t\tpgdp_stats_bytes = 0;\t/* pg_dumpplus --stats */\n"
+            "\tchar\t\t*copybuf;",
+            "\tPGresult   *res;\n\tint\t\t\tret;\n"
+            "\tuint64\t\tpgdp_stats_bytes = 0;\t/* pg_dumpplus --stats */\n"
+            "\tchar\t\t*copybuf;\n"
+            "\n\tif (pgdp_stats)\n"
+            "\t{\n"
+            "\t\tfout->pgdp_stats_active = true;\n"
+            "\t\tfout->pgdp_stats_rows_valid = false;\n"
+            "\t\tfout->pgdp_stats_rows = 0;\n"
+            "\t\tfout->pgdp_stats_bytes = 0;\n"
+            "\t}",
+            "ds-copy-state")
+        t = rep_once(t,
             "\t\tif (copybuf)\n\t\t{\n\t\t\tWriteData(fout, copybuf, ret);",
             "\t\tif (copybuf)\n\t\t{\n\t\t\tWriteData(fout, copybuf, ret);\n"
             "\t\t\tif (pgdp_stats)\n"
@@ -1237,21 +1256,142 @@ find_unquoted_char(const char *s, char sep)
             "\tPQclear(res);\n\n\t/* Do this to ensure we've pumped libpq back to idle state */",
             "\tif (pgdp_stats)\n"
             "\t{\n"
-            "\t\tconst char *pgdp_stats_rows = PQcmdTuples(res);\n\n"
+            "\t\tconst char *pgdp_stats_rows = PQcmdTuples(res);\n"
+            "\t\tchar *pgdp_stats_end = NULL;\n\n"
             f"\t\tif (pgdp_stats_rows == NULL || pgdp_stats_rows[0] == '\\0')\n"
             f"\t\t\t{stats_error}(\"--stats could not read COPY row count for table \\\"%s\\\"\", classname);\n"
-            "\t\tpg_log_info(\"table \\\"%s.%s\\\": rows=%s, bytes=\" UINT64_FORMAT,\n"
-            "\t\t\t\t\ttbinfo->dobj.namespace->dobj.name, classname,\n"
-            "\t\t\t\t\tpgdp_stats_rows, pgdp_stats_bytes);\n"
+            "\t\terrno = 0;\n"
+            "\t\tfout->pgdp_stats_rows = (uint64) strtoull(pgdp_stats_rows, &pgdp_stats_end, 10);\n"
+            f"\t\tif (errno == ERANGE || pgdp_stats_end == pgdp_stats_rows || *pgdp_stats_end != '\\0')\n"
+            f"\t\t\t{stats_error}(\"--stats received invalid COPY row count for table \\\"%s\\\"\", classname);\n"
+            "\t\tfout->pgdp_stats_bytes = pgdp_stats_bytes;\n"
+            "\t\tfout->pgdp_stats_rows_valid = true;\n"
             "\t}\n"
             "\tPQclear(res);\n\n\t/* Do this to ensure we've pumped libpq back to idle state */",
             "ds-copy-report")
+        if PG13:
+            t = rep_once(t,
+                "\tfout = CreateArchive(filename, archiveFormat, compressLevel, dosync,\n"
+                "\t\t\t\t\t\t archiveMode, setupDumpWorker);",
+                "\tfout = CreateArchive(filename, archiveFormat, compressLevel, dosync,\n"
+                "\t\t\t\t\t\t archiveMode, setupDumpWorker);\n\n"
+                "\tfout->pgdp_stats_enabled = pgdp_stats;",
+                "dm-stats-enabled-pg13")
+        else:
+            t = rep_once(t,
+                "\tfout = CreateArchive(filename, archiveFormat, compression_spec,\n"
+                "\t\t\t\t\t\t dosync, archiveMode, setupDumpWorker, sync_method);",
+                "\tfout = CreateArchive(filename, archiveFormat, compression_spec,\n"
+                "\t\t\t\t\t\t dosync, archiveMode, setupDumpWorker, sync_method);\n\n"
+                "\tfout->pgdp_stats_enabled = pgdp_stats;",
+                "dm-stats-enabled")
+        t = rep_once(t,
+            "\tint\t\t\trows_this_statement = 0;\n\n\t/* Temporary allows to access to foreign tables to dump data */",
+            "\tint\t\t\trows_this_statement = 0;\n\n"
+            "\tif (pgdp_stats)\n"
+            "\t{\n"
+            "\t\tfout->pgdp_stats_active = true;\n"
+            "\t\tfout->pgdp_stats_rows_valid = true;\n"
+            "\t\tfout->pgdp_stats_rows = 0;\n"
+            "\t\tfout->pgdp_stats_bytes = 0;\n"
+            "\t}\n\n"
+            "\t/* Temporary allows to access to foreign tables to dump data */",
+            "ds-insert-state")
+        t = rep_once(t,
+            "\t\tfor (int tuple = 0; tuple < PQntuples(res); tuple++)\n\t\t{",
+            "\t\tfor (int tuple = 0; tuple < PQntuples(res); tuple++)\n\t\t{\n"
+            "\t\t\tif (pgdp_stats)\n"
+            "\t\t\t{\n"
+            "\t\t\t\tif (fout->pgdp_stats_rows == PG_UINT64_MAX)\n"
+            f"\t\t\t\t\t{stats_error}(\"--stats INSERT row count overflow for table \\\"%s\\\"\", tbinfo->dobj.name);\n"
+            "\t\t\t\tfout->pgdp_stats_rows++;\n"
+            "\t\t\t}",
+            "ds-insert-rows")
         # 6f: makeTableDataInfo'da dogrulama — filtercond blogunun sonrasina
         anchor6e = "\t\t\ttdinfo->filtercond = psprintf(\"WHERE (%s)\", filter_clause);\n\t}"
         t = rep_once(t, anchor6e, anchor6e + "\n" + MASK_VALIDATE_C.replace("@@FM@@", fm_err), "dm-validate")
         wr(d, t); changed.append(d)
 
-    # ---------- 7) Makefile: pg_dumpplus hedefi ----------
+    # ---------- 7) Archive istatistik durumu ve INSERT byte kancasi ----------
+    ah = P("src", "bin", "pg_dump", "pg_backup.h"); t = rd(ah)
+    t = rep_once(t,
+        "\tchar\t   *use_role;\t\t/* Issue SET ROLE to this */\n\n\t/* error handling */",
+        "\tchar\t   *use_role;\t\t/* Issue SET ROLE to this */\n\n"
+        "\t/* pg_dumpplus: per-table export statistics (worker-local) */\n"
+        "\tbool\t\tpgdp_stats_enabled;\n"
+        "\tbool\t\tpgdp_stats_active;\n"
+        "\tbool\t\tpgdp_stats_rows_valid;\n"
+        "\tuint64\t\tpgdp_stats_rows;\n"
+        "\tuint64\t\tpgdp_stats_bytes;\n\n"
+        "\t/* error handling */",
+        "dbh-stats")
+    wr(ah, t); changed.append(ah)
+
+    ac = P("src", "bin", "pg_dump", "pg_backup_archiver.c"); t = rd(ac)
+    t = rep_once(t,
+        "\tWriteData(AH, s, strlen(s));\n}",
+        "\tsize_t\t\tlen = strlen(s);\n\n"
+        "\tWriteData(AH, s, len);\n"
+        "\tif (AH->pgdp_stats_active)\n"
+        "\t{\n"
+        "\t\tif (AH->pgdp_stats_bytes > UINT64_MAX - (uint64) len)\n"
+        f"\t\t\t{stats_error}(\"--stats INSERT byte count overflow\");\n"
+        "\t\tAH->pgdp_stats_bytes += (uint64) len;\n"
+        "\t}\n}",
+        "dba-archputs")
+    t = rep_once(t,
+        "\tWriteData(AH, p, cnt);\n\tfree(p);\n\treturn (int) cnt;",
+        "\tWriteData(AH, p, cnt);\n"
+        "\tif (AH->pgdp_stats_active)\n"
+        "\t{\n"
+        "\t\tif (AH->pgdp_stats_bytes > UINT64_MAX - (uint64) cnt)\n"
+        f"\t\t\t{stats_error}(\"--stats INSERT byte count overflow\");\n"
+        "\t\tAH->pgdp_stats_bytes += (uint64) cnt;\n"
+        "\t}\n"
+        "\tfree(p);\n\treturn (int) cnt;",
+        "dba-archprintf")
+    t = rep_once(t,
+        "void\nWriteDataChunksForTocEntry(ArchiveHandle *AH, TocEntry *te)\n{",
+        "void\npgdp_report_stats(ArchiveHandle *AH, TocEntry *te)\n{\n"
+        "\tif (AH->public.pgdp_stats_active && AH->public.pgdp_stats_rows_valid)\n"
+        "\t{\n"
+        "\t\tif (AH->public.numWorkers > 1)\n"
+        '\t\t\tfprintf(stderr, "pg_dumpplus: table \\\"%s.%s\\\": rows=" UINT64_FORMAT ", bytes=" UINT64_FORMAT "\\n",\n'
+        "\t\t\t\t\tte->namespace ? te->namespace : \"\", te->tag ? te->tag : \"\",\n"
+        "\t\t\t\t\tAH->public.pgdp_stats_rows, AH->public.pgdp_stats_bytes);\n"
+        "\t\telse\n"
+        "\t\t\tpg_log_info(\"table \\\"%s.%s\\\": rows=\" UINT64_FORMAT \", bytes=\" UINT64_FORMAT,\n"
+        "\t\t\t\t\tte->namespace ? te->namespace : \"\", te->tag ? te->tag : \"\",\n"
+        "\t\t\t\t\tAH->public.pgdp_stats_rows, AH->public.pgdp_stats_bytes);\n"
+        "\t\tAH->public.pgdp_stats_active = false;\n"
+        "\t\tAH->public.pgdp_stats_rows_valid = false;\n"
+        "\t}\n}\n\n"
+        "void\nWriteDataChunksForTocEntry(ArchiveHandle *AH, TocEntry *te)\n{",
+        "dba-report-fn")
+    t = rep_once(t,
+        "\tif (endPtr != NULL)\n\t\t(*endPtr) (AH, te);\n\n\tAH->currToc = NULL;",
+        "\tif (endPtr != NULL)\n\t\t(*endPtr) (AH, te);\n\n"
+        "\tpgdp_report_stats(AH, te);\n\n\tAH->currToc = NULL;",
+        "dba-report-call")
+    wr(ac, t); changed.append(ac)
+
+    ahh = P("src", "bin", "pg_dump", "pg_backup_archiver.h"); t = rd(ahh)
+    t = rep_once(t,
+        "extern void WriteDataChunksForTocEntry(ArchiveHandle *AH, TocEntry *te);",
+        "extern void WriteDataChunksForTocEntry(ArchiveHandle *AH, TocEntry *te);\n"
+        "extern void pgdp_report_stats(ArchiveHandle *AH, TocEntry *te);",
+        "dbah-proto")
+    wr(ahh, t); changed.append(ahh)
+
+    nul = P("src", "bin", "pg_dump", "pg_backup_null.c"); t = rd(nul)
+    t = rep_once(t,
+        "\t\tte->dataDumper((Archive *) AH, te->dataDumperArg);\n\n\t\tif (strcmp(te->desc, \"BLOBS\") == 0)",
+        "\t\tte->dataDumper((Archive *) AH, te->dataDumperArg);\n"
+        "\t\tpgdp_report_stats(AH, te);\n\n\t\tif (strcmp(te->desc, \"BLOBS\") == 0)",
+        "dbn-report-call")
+    wr(nul, t); changed.append(nul)
+
+    # ---------- 8) Makefile: pg_dumpplus hedefi ----------
     mk = P("src","bin","pg_dump","Makefile"); t = rd(mk)
     if "pg_dumpplus" not in t:
         m_link = re.search(r"^pg_dump: [^\n]*\n\t\$\(CC\)[^\n]*-o \$@\S*\n", t, re.M)

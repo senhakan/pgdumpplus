@@ -13,7 +13,7 @@ Historical release claims below are evidence ledger entries, not current state.
 | --- | --- | --- |
 | S0 | DONE | Design/source review and linked execution plan; documentation checks recorded below |
 | S1 | DONE | COPY rows/bytes prototype and PG13–18/OS matrix evidence complete; INSERT/parallel remain S2 |
-| S2 | READY | INSERT/parallel/PG13–18 correctness and restored-value evidence |
+| S2 | IN_PROGRESS | INSERT/parallel/PG13–18 correctness and restored-value evidence |
 | S3 | BLOCKED | S2; repeated normal/disabled/enabled export benchmarks on designated test host |
 | S4 | BLOCKED | S3; Turkish MD/HTML report, then explicit owner continuation decision |
 | S5 | BLOCKED | Positive S4 decision; docs and platform/package verification |
@@ -56,6 +56,19 @@ select the full PG13–18, EL8/9/10 and Ubuntu/Debian matrix; `full_matrix=true`
 the manual candidate-preparation switch. Full-matrix evidence is recorded in
 run 35575004840 above; the dispatch-only release-attestation step does not
 publish a release and is not part of the S1 runtime/package test claim.
+
+S2 implementation evidence (2026-09-21, working tree): extended the archive
+statistics state into `pg_backup.h` and the archiver so INSERT output counts
+tuples and measures bytes at existing `archputs`/`archprintf` write boundaries.
+Completion is reported after the format end callback; the plain SQL archive
+path uses the same reporting helper, and parallel directory workers emit
+complete bounded lines. COPY now stores a validated 64-bit `PQcmdTuples()`
+count and defers its report to the same lifecycle boundary. The isolated
+fixture adds INSERT/column-insert/rows-per-insert/default-values assertions and
+an independent SQL-byte oracle. Local PG17.11 COPY, INSERT, column INSERT,
+parallel directory and restore checks pass; pristine PG13.23 and PG17.11
+patcher/idempotence checks pass and both generated clients compile. S2 remains
+IN_PROGRESS until the post-change isolated CI and full PG13–18 matrix pass.
 
 Focused CI evidence: [35570968301](https://github.com/senhakan/pgdumpplus/actions/runs/35570968301)
 for commit `c084168` completed successfully. It ran exactly PG17.11 verify,
