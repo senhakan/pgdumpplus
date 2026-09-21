@@ -17,7 +17,7 @@ Historical release claims below are evidence ledger entries, not current state.
 | S3 | DONE | Rocky 9 + PostgreSQL 17 A/B/C benchmark and restore evidence complete |
 | S4 | DONE | Owner approved continuation after timing report |
 | S5 | DONE | Stats display integration, docs and package verification |
-| S6 | IN_PROGRESS | Commit, CI, tag and verified release artifacts |
+| S6 | DONE | v2.2.0 matrix, TAP, provenance and release verification complete |
 
 S0 evidence (2026-09-21): inspected local patched PG17.11 COPY/INSERT/archiver paths
 and official libpq result documentation; `git diff --check` and local document-link
@@ -146,6 +146,14 @@ S5 completion evidence (2026-09-21): PG17.11 pristine patcher/build produced
 the 2.2.0 Ubuntu package; package extraction smoke showed the new help text and
 version. Public audit, Python syntax, diff and release-gate checks passed.
 The isolated PG17 suite and 1M output evidence above passed before packaging.
+
+S6 completion evidence (2026-09-21): commit `f27f83f` was tagged `v2.2.0`.
+Full release CI [35626290007](https://github.com/senhakan/pgdumpplus/actions/runs/35626290007)
+completed 98/98 jobs successfully across PG13–18, EL8/9/10, Ubuntu/Debian,
+verification, smoke, SBOM and provenance checks. Upstream TAP
+[35626289411](https://github.com/senhakan/pgdumpplus/actions/runs/35626289411)
+also passed. The stable [v2.2.0 release](https://github.com/senhakan/pgdumpplus/releases/tag/v2.2.0)
+is published with packages, tarballs, checksums, SBOM and installer.
 
 ## Verified baseline
 
