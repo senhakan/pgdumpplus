@@ -284,6 +284,19 @@ Partitioned tables require selecting the partition hierarchy consistently. A
 mask that targets a partition child excluded by the table selection fails
 explicitly; it is never silently ignored.
 
+## Export statistics
+
+Add `--stats` to print completed table-export statistics on stderr. The line
+reports actual exported rows, uncompressed serialized data size and elapsed
+table duration; it does not pre-count or run a second query:
+
+```text
+pg_dumpplus: table "public.orders": rows=125438, size=84.00 MB, duration=2m 14s
+```
+
+Sizes use binary units (`B`, `KB`, `MB`, `GB`, `TB`). Schema, index, sequence
+and other metadata entries do not produce table statistics.
+
 ## Restore
 
 Restore a custom or directory archive into an existing empty database:

@@ -1175,7 +1175,7 @@ find_unquoted_char(const char *s, char sep)
             'printf(_("  --plan-format=text|json      select dry-run plan format\\n"));\n'
             'printf(_("  --build-info                 print project, upstream and source identity\\n"));\n'
             'printf(_("  --profile=FILE               load a strict JSON profile (schema_version 1)\\n"));\n'
-            'printf(_("  --stats                      show rows and exported bytes after each table\\n"));\n'
+            'printf(_("  --stats                      show rows, size and duration after each table\\n"));\n'
             + where_help, "dm-help")
         # 5e: cozum blogu — --where cozum bloğunun ardina
         mw = re.search(r"if \(tabledata_where_oids\.head == NULL\)\n[ \t]*\S[^\0]*?\n[ \t]*\}\n", t)
@@ -1243,6 +1243,7 @@ find_unquoted_char(const char *s, char sep)
             "\t\tfout->pgdp_stats_rows_valid = false;\n"
             "\t\tfout->pgdp_stats_rows = 0;\n"
             "\t\tfout->pgdp_stats_bytes = 0;\n"
+            "\t\tINSTR_TIME_SET_CURRENT(fout->pgdp_stats_started);\n"
             "\t}",
             "ds-copy-state")
         t = rep_once(t,
@@ -1302,6 +1303,7 @@ find_unquoted_char(const char *s, char sep)
             "\t\tfout->pgdp_stats_rows_valid = true;\n"
             "\t\tfout->pgdp_stats_rows = 0;\n"
             "\t\tfout->pgdp_stats_bytes = 0;\n"
+            "\t\tINSTR_TIME_SET_CURRENT(fout->pgdp_stats_started);\n"
             "\t}\n\n"
             "\t/* Temporary allows to access to foreign tables to dump data */",
             "ds-insert-state")
@@ -1323,6 +1325,10 @@ find_unquoted_char(const char *s, char sep)
     # ---------- 7) Archive istatistik durumu ve INSERT byte kancasi ----------
     ah = P("src", "bin", "pg_dump", "pg_backup.h"); t = rd(ah)
     t = rep_once(t,
+        '#include "fe_utils/simple_list.h"\n#include "libpq-fe.h"',
+        '#include "fe_utils/simple_list.h"\n#include "portability/instr_time.h"\n#include "libpq-fe.h"',
+        "dbh-instr-time")
+    t = rep_once(t,
         "\tchar\t   *use_role;\t\t/* Issue SET ROLE to this */\n\n\t/* error handling */",
         "\tchar\t   *use_role;\t\t/* Issue SET ROLE to this */\n\n"
         "\t/* pg_dumpplus: per-table export statistics (worker-local) */\n"
@@ -1330,7 +1336,8 @@ find_unquoted_char(const char *s, char sep)
         "\tbool\t\tpgdp_stats_active;\n"
         "\tbool\t\tpgdp_stats_rows_valid;\n"
         "\tuint64\t\tpgdp_stats_rows;\n"
-        "\tuint64\t\tpgdp_stats_bytes;\n\n"
+        "\tuint64\t\tpgdp_stats_bytes;\n"
+        "\tinstr_time\tpgdp_stats_started;\n\n"
         "\t/* error handling */",
         "dbh-stats")
     wr(ah, t); changed.append(ah)
@@ -1360,17 +1367,49 @@ find_unquoted_char(const char *s, char sep)
         "dba-archprintf")
     t = rep_once(t,
         "void\nWriteDataChunksForTocEntry(ArchiveHandle *AH, TocEntry *te)\n{",
+        "static void\npgdp_format_size(uint64 value, char *buf, size_t buflen)\n{\n"
+        "\tstatic const char *units[] = {\"B\", \"KB\", \"MB\", \"GB\", \"TB\"};\n"
+        "\tdouble scaled = (double) value;\n"
+        "\tint unit = 0;\n\n"
+        "\twhile (scaled >= 1024.0 && unit < 4)\n"
+        "\t{\n\t\tscaled /= 1024.0;\n\t\tunit++;\n\t}\n"
+        "\tif (unit == 0)\n"
+        "\t\tsnprintf(buf, buflen, UINT64_FORMAT \" B\", value);\n"
+        "\telse\n"
+        "\t\tsnprintf(buf, buflen, \"%.2f %s\", scaled, units[unit]);\n"
+        "}\n\n"
+        "static void\npgdp_format_duration(double seconds, char *buf, size_t buflen)\n{\n"
+        "\tuint64 total_ms = (uint64) (seconds * 1000.0 + 0.5);\n"
+        "\tuint64 hours = total_ms / (60 * 60 * 1000);\n"
+        "\tuint64 minutes = (total_ms / (60 * 1000)) % 60;\n"
+        "\tuint64 whole_seconds = (total_ms / 1000) % 60;\n"
+        "\tuint64 milliseconds = total_ms % 1000;\n\n"
+        "\tif (hours > 0)\n"
+        "\t\tsnprintf(buf, buflen, UINT64_FORMAT \"h\" UINT64_FORMAT \"m\" UINT64_FORMAT \"s\", hours, minutes, whole_seconds);\n"
+        "\telse if (minutes > 0)\n"
+        "\t\tsnprintf(buf, buflen, UINT64_FORMAT \"m\" UINT64_FORMAT \"s\", minutes, whole_seconds);\n"
+        "\telse if (whole_seconds > 0)\n"
+        "\t\tsnprintf(buf, buflen, UINT64_FORMAT \"s\", whole_seconds);\n"
+        "\telse\n"
+        "\t\tsnprintf(buf, buflen, UINT64_FORMAT \"ms\", milliseconds);\n"
+        "}\n\n"
         "void\npgdp_report_stats(ArchiveHandle *AH, TocEntry *te)\n{\n"
         "\tif (AH->public.pgdp_stats_active && AH->public.pgdp_stats_rows_valid)\n"
         "\t{\n"
+        "\t\tinstr_time pgdp_stats_now;\n"
+        "\t\tchar sizebuf[64];\n"
+        "\t\tchar durationbuf[64];\n\n"
+        "\t\tINSTR_TIME_SET_CURRENT(pgdp_stats_now);\n"
+        "\t\tpgdp_format_size(AH->public.pgdp_stats_bytes, sizebuf, sizeof(sizebuf));\n"
+        "\t\tpgdp_format_duration(INSTR_TIME_GET_DOUBLE(pgdp_stats_now) - INSTR_TIME_GET_DOUBLE(AH->public.pgdp_stats_started), durationbuf, sizeof(durationbuf));\n"
         "\t\tif (AH->public.numWorkers > 1)\n"
-        '\t\t\tfprintf(stderr, "pg_dumpplus: table \\\"%s.%s\\\": rows=" UINT64_FORMAT ", bytes=" UINT64_FORMAT "\\n",\n'
+        '\t\t\tfprintf(stderr, "pg_dumpplus: table \\\"%s.%s\\\": rows=" UINT64_FORMAT ", size=%s, duration=%s\\n",\n'
         "\t\t\t\t\tte->namespace ? te->namespace : \"\", te->tag ? te->tag : \"\",\n"
-        "\t\t\t\t\tAH->public.pgdp_stats_rows, AH->public.pgdp_stats_bytes);\n"
+        "\t\t\t\t\tAH->public.pgdp_stats_rows, sizebuf, durationbuf);\n"
         "\t\telse\n"
-        "\t\t\tpg_log_info(\"table \\\"%s.%s\\\": rows=\" UINT64_FORMAT \", bytes=\" UINT64_FORMAT,\n"
+        "\t\t\tpg_log_info(\"table \\\"%s.%s\\\": rows=\" UINT64_FORMAT \", size=%s, duration=%s\",\n"
         "\t\t\t\t\tte->namespace ? te->namespace : \"\", te->tag ? te->tag : \"\",\n"
-        "\t\t\t\t\tAH->public.pgdp_stats_rows, AH->public.pgdp_stats_bytes);\n"
+        "\t\t\t\t\tAH->public.pgdp_stats_rows, sizebuf, durationbuf);\n"
         "\t\tAH->public.pgdp_stats_active = false;\n"
         "\t\tAH->public.pgdp_stats_rows_valid = false;\n"
         "\t}\n}\n\n"

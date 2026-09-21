@@ -6,7 +6,7 @@ Statuses: READY, IN_PROGRESS, BLOCKED (dependency stated), DONE (evidence requir
 ## Current request: export-time statistics planning
 
 Specification: [export-stats.md](docs/design/export-stats.md).
-Local review baseline `5369a348ad95d39c81839569892e3890850f9f31`, manifest 2.1.1.
+Local review baseline `5369a348ad95d39c81839569892e3890850f9f31`, manifest 2.2.0.
 Historical release claims below are evidence ledger entries, not current state.
 
 | ID | Status | Dependency / required result |
@@ -15,9 +15,9 @@ Historical release claims below are evidence ledger entries, not current state.
 | S1 | DONE | COPY rows/bytes prototype and PG13–18/OS matrix evidence complete; INSERT/parallel remain S2 |
 | S2 | DONE | INSERT/parallel/PG13–18 correctness and restored-value evidence |
 | S3 | DONE | Rocky 9 + PostgreSQL 17 A/B/C benchmark and restore evidence complete |
-| S4 | IN_PROGRESS | Turkish MD/HTML report prepared privately; explicit owner continuation decision pending |
-| S5 | BLOCKED | Positive S4 decision; docs and platform/package verification |
-| S6 | BLOCKED | S5 and applicable release authority; verified release |
+| S4 | DONE | Owner approved continuation after timing report |
+| S5 | DONE | Stats display integration, docs and package verification |
+| S6 | IN_PROGRESS | Commit, CI, tag and verified release artifacts |
 
 S0 evidence (2026-09-21): inspected local patched PG17.11 COPY/INSERT/archiver paths
 and official libpq result documentation; `git diff --check` and local document-link
@@ -101,8 +101,8 @@ all validation queries returned 250000 rows. Median C/B deltas were -1.15%
 (custom -Z5), +13.18% (plain COPY) and +3.31% (directory -j4 -Z5). These are
 warm-cache, local synthetic measurements rather than a general performance
 claim. Turkish Markdown and HTML decision reports were generated in a private
-run directory and are intentionally not tracked. S3 is DONE; S4 awaits the
-owner's continuation decision before README/release integration.
+run directory and are intentionally not tracked. S3 and S4 are DONE; S5 is
+in progress for display integration, docs and package verification.
 
 Focused CI evidence: [35585515209](https://github.com/senhakan/pgdumpplus/actions/runs/35585515209)
 completed successfully after the benchmark evidence update. It ran exactly
@@ -119,8 +119,33 @@ and a 1,000-table probe were also run (63 and 21 runs): no monotonic row/byte
 runtime penalty was observed, while stats adds approximately 55 bytes of stderr
 per completed table. Nine representative archives passed `pg_restore --list`.
 The private Turkish MD/HTML report records raw evidence and limits; no raw
-archives, logs, endpoint, credentials or real data are tracked. S4 report is
-complete and awaits explicit owner continuation before release work.
+archives, logs, endpoint, credentials or real data are tracked. The owner
+approved continuation on 2026-09-21; S4 is DONE.
+
+Local Docker follow-up evidence (2026-09-21): on Ubuntu with an isolated
+PostgreSQL 17.5 container, a fresh synthetic 1M/10M/100M fixture was measured
+with the same PG17.11 vanilla/candidate clients. A cache-balanced run completed
+63/63 A/B/C exports (7 rotated iterations per size); archives were hashed and
+discarded after each run to avoid filling the host disk. Median C/B deltas were
+-4.44% (1M), +2.78% (10M) and -9.38% (100M); archive sizes were identical and
+stats added about 186–394 bytes of stderr per table. This is a local
+steady-state/cache-balanced measurement, not a cache-cold claim; global page
+cache eviction was intentionally not used to avoid affecting unrelated
+services. Raw output remains outside the repository at the handoff.
+
+Stats display follow-up (2026-09-21): the completion line now reports
+`rows`, human-readable binary `size` (`B`/`KB`/`MB`/`GB`/`TB`) and monotonic
+human-readable `duration` (`ms`, `s`, `m s`, or `h m s`). A fresh PG17.11 build
+passed the isolated Docker suite (53/53), including COPY/INSERT/column-insert,
+filters, masks, parallel directory output and restores. A 1M synthetic export
+produced `rows=1000000, size=38.04 MB, duration=2s`. Non-data objects (schemas,
+sequences, indexes and metadata) intentionally produce no table statistics;
+only completed table-data entries do.
+
+S5 completion evidence (2026-09-21): PG17.11 pristine patcher/build produced
+the 2.2.0 Ubuntu package; package extraction smoke showed the new help text and
+version. Public audit, Python syntax, diff and release-gate checks passed.
+The isolated PG17 suite and 1M output evidence above passed before packaging.
 
 ## Verified baseline
 
@@ -218,8 +243,8 @@ outside Git; put only sanitized conclusions here.
 
 ## Resume instructions
 
-For the current statistics request, follow S0–S6 above. Implementation is not yet
-authorized; even after authorization, stop at the S4 owner decision as specified.
+For the current statistics request, follow S0–S6 above. Implementation and
+continuation are authorized; complete S5 and apply the release gates before S6.
 The C2 roadmap below remains separate and is not the next task for this request.
 
 Next implementation task: complete the security review of

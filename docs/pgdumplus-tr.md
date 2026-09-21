@@ -170,6 +170,18 @@ Partition tablolarında seçim hiyerarşisi tutarlı olmalıdır. Seçim dışı
 bir partition child kolonuna maske verilirse komut açıkça hata verir; kural
 sessizce yok sayılmaz.
 
+## Dışa aktarım istatistikleri
+
+`--stats` tamamlanan her tablo için stderr üzerinde gerçek satır sayısını,
+sıkıştırılmamış veri boyutunu ve tablo aktarım süresini gösterir:
+
+```text
+pg_dumpplus: table "public.orders": rows=125438, size=84.00 MB, duration=2m 14s
+```
+
+Boyut birimleri ikilik biçimdedir (`B`, `KB`, `MB`, `GB`, `TB`). Şema, index,
+sequence ve diğer metadata nesneleri için tablo istatistik satırı üretilmez.
+
 ## Geri yükleme
 
 Custom veya dizin arşivini mevcut, boş bir veritabanına yükleyin:

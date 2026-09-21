@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "project_version": "2.1.1",
+  "project_version": "2.2.0",
   "channels": {
-    "stable": "v2.1.1",
+    "stable": "v2.2.0",
     "next": "main"
   },
   "postgresql": [

@@ -5,7 +5,7 @@ complete; the required host-scale timing experiment and owner continuation
 decision remain before release integration.
 Owner-facing requirement and decision report language: Turkish.
 Reviewed: 2026-09-21; repository baseline: `5369a348ad95d39c81839569892e3890850f9f31`.
-Manifest at review: project 2.1.1, PostgreSQL 13–18, existing x86_64 targets.
+Manifest at review: project 2.2.0, PostgreSQL 13–18, existing x86_64 targets.
 This document supersedes earlier conversational proposals for pre-counts,
 estimated statistics, source relation size and multiple statistics options.
 It takes precedence over the older default roadmap for this feature only.
@@ -26,11 +26,13 @@ pg_dumpplus --stats -v -Fc -Z 5 -U postgres -d example -f example.dump 2>example
 ```
 
 ```text
-pg_dumpplus: table "public"."orders": rows=125438, bytes=88080384 (84.00 MiB uncompressed), elapsed=2.400 s
+pg_dumpplus: table "public.orders": rows=125438, size=84.00 MB, duration=2m 14s
 ```
 
-`rows` has no locale grouping; `bytes` is an exact unsigned decimal integer;
-the parenthesized binary unit is rounded for humans. Escape control characters
+`rows` has no locale grouping. `size` is formatted with binary units (`B`, `KB`,
+`MB`, `GB`, `TB`) and two decimal places for units above bytes. `duration` is
+monotonic elapsed table-export time in a compact human-readable form such as
+`45s`, `2m 14s` or `2h 30m 05s`. Escape control characters
 in identifiers so each completion remains one physical log line. Never print
 row values, filter literals, mask expressions or connection credentials.
 No percent-complete, live row updates, ETA, JSON/CSV CLI, stats file option or
@@ -159,7 +161,7 @@ Required tests compare stats to independent expectations and restored contents:
 
 | Case | Required assertion |
 | --- | --- |
-| Known 0, 1 and many rows | Exact rows; empty COPY bytes=0; one completion per entry |
+| Known 0, 1 and many rows | Exact rows; empty COPY size=0 B; one completion per entry |
 | Fixed UTF-8/tab/newline/backslash/NULL/bytea data | COPY serialized-byte oracle matches; escaped content cannot change row count |
 | WHERE and equivalent profile, plus masks | Restored selected/masked values and counts agree; expressions execute once |
 | Plain, custom Z0/Z5, tar, directory serial/parallel | Same COPY rows/bytes; valid archive and error-free restore |
@@ -291,15 +293,14 @@ performance changes require presenting updated evidence before publication.
 | S1 | Authorized prototype: CLI, COPY rows/bytes, lifecycle/logging | PG17 compiled proof, exact oracle, failed-write check; no pre-count |
 | S2 | INSERT, parallel, edge cases and major compatibility | Section 4 passes PG13–18; unchanged disabled behavior |
 | S3 | Reproducible benchmark runner and experiment | Raw A/B/C data, required scenarios and valid restores |
-| S4 | Turkish MD/HTML report and owner review | Evidence delivered; stop for continue/optimize/defer decision |
+| S4 | Turkish MD/HTML report and owner review | DONE; owner approved continuation |
 | S5 | After positive decision: finalize docs and package verification | Actual manifest build/runtime gates including Rocky 9/10; docs accurate |
 | S6 | Release under existing release authorization/gates | Immutable artifacts, verified downloads; no test substitutions |
 
 Dependencies: S1 requires implementation authorization; S2 follows S1; S3 follows
-S2 (runner preparation may accompany S1/S2); S4 follows S3; S5 requires explicit
-S4 decision; S6 follows S5 and applicable release authority. This planning request
-completes only S0. A subsequent instruction to implement this plan authorizes S1
-through S4, not bypassing the explicitly requested S4 continuation decision.
+S2 (runner preparation may accompany S1/S2); S4 follows S3; S5 follows the
+owner-approved decision; S6 follows S5 and applicable release authority. The
+owner has authorized continuation through the release gates.
 
 Each handoff records task/status, Git revision and diff, generated upstream
 versions, reproducible commands, test outcomes, private artifact location (only in

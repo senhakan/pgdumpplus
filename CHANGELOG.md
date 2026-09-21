@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.0
+
+- Added `--stats` table completion lines with exported rows, human-readable
+  serialized size and human-readable table duration.
+- Added PG17 isolated coverage for COPY, INSERT, filters, masking, parallel
+  directory exports and restore validation.
+
 ## 2.1.1
 
 - Added an OS-aware automated installer for Ubuntu, Debian and EL8/9/10.

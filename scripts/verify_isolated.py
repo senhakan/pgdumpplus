@@ -299,7 +299,7 @@ class Suite:
         """--stats reports the server COPY count and serialized payload bytes."""
         _, result = self.dump(["--stats", "-t", "public.stats_probe"])
         match = re.search(
-            r'table "public\.stats_probe": rows=(\d+), bytes=(\d+)',
+            r'table "public\.stats_probe": rows=(\d+), size=(\d+) B, duration=[^\n]+',
             result.stderr,
         )
         if not match:
@@ -313,7 +313,7 @@ class Suite:
             "--where=public.stats_probe:id % 2 = 0",
         ], fmt="p")
         filtered_match = re.search(
-            r'table "public\.stats_probe": rows=(\d+), bytes=(\d+)',
+            r'table "public\.stats_probe": rows=(\d+), size=(\d+) B, duration=[^\n]+',
             filtered.stderr,
         )
         if not filtered_match:
@@ -330,7 +330,7 @@ class Suite:
             "--stats", "--inserts", "--rows-per-insert=1", "-t", "public.stats_probe",
         ], fmt="p")
         match = re.search(
-            r'table "public\.stats_probe": rows=(\d+), bytes=(\d+)',
+            r'table "public\.stats_probe": rows=(\d+), size=(\d+) B, duration=[^\n]+',
             result.stderr,
         )
         if not match:
@@ -349,7 +349,7 @@ class Suite:
             "-t", "public.stats_probe",
         ], fmt="p")
         column_match = re.search(
-            r'table "public\.stats_probe": rows=(\d+), bytes=(\d+)',
+            r'table "public\.stats_probe": rows=(\d+), size=(\d+) B, duration=[^\n]+',
             column_result.stderr,
         )
         if not column_match:
@@ -368,7 +368,7 @@ class Suite:
             "--stats", "--inserts", "-t", "public.stats_zero",
         ], fmt="p")
         zero_match = re.search(
-            r'table "public\.stats_zero": rows=(\d+), bytes=(\d+)',
+            r'table "public\.stats_zero": rows=(\d+), size=(\d+) B, duration=[^\n]+',
             zero_result.stderr,
         )
         if not zero_match:

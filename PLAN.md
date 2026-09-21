@@ -15,7 +15,7 @@ after the experiment before release integration/publication. Earlier
 pre-count/source-size proposals are superseded. For this feature, use the
 S-task queue rather than the historical default task below. Historical
 baseline/release statements below are dated; the manifest currently records
-project 2.1.1, not the original v1.2.0 baseline.
+project 2.2.0, not the original v1.2.0 baseline.
 
 ### CI execution profiles
 
