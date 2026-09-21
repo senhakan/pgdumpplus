@@ -12,7 +12,7 @@ Historical release claims below are evidence ledger entries, not current state.
 | ID | Status | Dependency / required result |
 | --- | --- | --- |
 | S0 | DONE | Design/source review and linked execution plan; documentation checks recorded below |
-| S1 | BLOCKED | User implementation authorization; compiled COPY/CLI/lifecycle proof |
+| S1 | IN_PROGRESS | COPY rows/bytes prototype and PG17 runtime evidence; INSERT/parallel/major matrix remain S2 |
 | S2 | BLOCKED | S1; INSERT/parallel/PG13–18 correctness and restored-value evidence |
 | S3 | BLOCKED | S2; repeated normal/disabled/enabled export benchmarks on designated test host |
 | S4 | BLOCKED | S3; Turkish MD/HTML report, then explicit owner continuation decision |
@@ -25,6 +25,18 @@ checks pass. No stats implementation, benchmark, server mutation or publication
 performed. Performance expectations are unmeasured. Exact next step: when the user
 authorizes implementation, start S1 using the linked design; proceed through S4
 and present actual timing/restore evidence before asking for continuation.
+
+S1 implementation evidence (2026-09-21, working tree): added `--stats` to the
+compiled client. COPY rows come from the completed COPY command's `PQcmdTuples()`;
+bytes are the successful `WriteData` buffer lengths. No COUNT/EXPLAIN/extra SQL or
+payload scan is used. Patcher idempotence and atomicity checks pass for pristine
+PG17.11 and PG13.23 sources. PG17.11 generated C compiled successfully locally.
+A disposable Docker PostgreSQL 17.5 fixture reported `stats_empty` 0/0,
+`stats_filtered` 10/106, `stats_small` 7/56, and a filtered export reported 5/56;
+custom archive restore returned 7 rows. `--stats` alone emits the completion line
+without `-v`. The isolated suite now includes an independent COPY row/byte oracle;
+the full suite still needs a matching PG17 client environment after this change.
+S1 remains IN_PROGRESS until that regression run and failed-write check pass.
 
 CI profile update (2026-09-21): `.github/workflows/build.yml` now uses PG17 +
 EL9 + Ubuntu 24.04 for normal pushes and manual development runs. Version tags

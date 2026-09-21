@@ -58,6 +58,8 @@ INSERT INTO "Odd:Table" VALUES
 CREATE TABLE mask_edges (id integer PRIMARY KEY, value text);
 INSERT INTO mask_edges VALUES
     (1, NULL), (2, ''), (3, '1'), (4, '12'), (5, '123'), (6, '1234'), (7, '12345');
+CREATE TABLE stats_probe (id integer, payload text);
+INSERT INTO stats_probe SELECT g, 'row-' || g FROM generate_series(1,7) g;
 CREATE TABLE partitioned_events (id integer, secret text) PARTITION BY RANGE (id);
 CREATE TABLE partitioned_events_1 PARTITION OF partitioned_events FOR VALUES FROM (1) TO (4);
 INSERT INTO partitioned_events VALUES (1, 'alpha'), (2, 'beta'), (3, 'gamma');
@@ -289,6 +291,35 @@ class Suite:
                                 "SELECT count(*), count(DISTINCT state) FROM snapshot_probe"),
                        "20000|1")
 
+    def stats_copy(self):
+        """--stats reports the server COPY count and serialized payload bytes."""
+        _, result = self.dump(["--stats", "-t", "public.stats_probe"])
+        match = re.search(
+            r'table "public\.stats_probe": rows=(\d+), bytes=(\d+)',
+            result.stderr,
+        )
+        if not match:
+            raise AssertionError("missing COPY stats line: " + result.stderr)
+        self.equal(match.group(1), "7")
+        expected = sum(len((f"{i}\trow-{i}\n").encode("utf-8")) for i in range(1, 8))
+        self.equal(int(match.group(2)), expected)
+
+        _, filtered = self.dump([
+            "--stats", "-t", "public.stats_probe",
+            "--where=public.stats_probe:id % 2 = 0",
+        ], fmt="p")
+        filtered_match = re.search(
+            r'table "public\.stats_probe": rows=(\d+), bytes=(\d+)',
+            filtered.stderr,
+        )
+        if not filtered_match:
+            raise AssertionError("missing filtered stats line: " + filtered.stderr)
+        self.equal(filtered_match.group(1), "3")
+        expected_filtered = sum(
+            len((f"{i}\trow-{i}\n").encode("utf-8")) for i in (2, 4, 6)
+        )
+        self.equal(int(filtered_match.group(2)), expected_filtered)
+
     def checks(self):
         self.case("unfiltered dump matches upstream (random guards normalized)", self.unfiltered)
         for fmt, extra in (("c", []), ("p", []), ("p", ["--inserts"]),
@@ -334,6 +365,7 @@ class Suite:
         self.case("dry-run does not execute custom SQL", self.dry_run_does_not_execute_custom_sql)
         self.case("dry-run option combinations fail clearly", self.dry_run_option_errors)
         self.case("compiled JSON profile resolves and restores", self.profile_roundtrip)
+        self.case("COPY export stats count rows and bytes", self.stats_copy)
         self.case("concurrent update keeps one dump snapshot", self.snapshot_consistency)
         self.case("preset on non-text column fails before export", lambda: self.error(
             "--mask=public.customers:birth_year:all", "yields text"))

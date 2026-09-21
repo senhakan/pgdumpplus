@@ -1103,6 +1103,7 @@ find_unquoted_char(const char *s, char sep)
             "} DumpMaskEntry;\n"
             "static DumpMaskEntry *dump_mask_entries = NULL;\n"
             "static bool pgdp_dry_run = false;\n"
+            "static bool pgdp_stats = false;\n"
             "static const char *pgdp_plan_format = \"text\";\n"
             "static bool pgdp_plan_format_set = false;\n"
             "static const char *pgdp_profile_path = NULL;\n"
@@ -1122,7 +1123,8 @@ find_unquoted_char(const char *s, char sep)
             '\t\t{"dry-run", no_argument, NULL, 28},\t\t/* pg_dumpplus */\n'
             '\t\t{"plan-format", required_argument, NULL, 29},\t/* pg_dumpplus */\n'
             '\t\t{"build-info", no_argument, NULL, 30},\t\t/* pg_dumpplus */\n'
-            '\t\t{"profile", required_argument, NULL, 31},\t\t/* pg_dumpplus */',
+            '\t\t{"profile", required_argument, NULL, 31},\t\t/* pg_dumpplus */\n'
+            '\t\t{"stats", no_argument, NULL, 32},\t\t/* pg_dumpplus */',
             "dm-longopt")
         # 5c: case 27 (case 26 blogundan hemen sonra)
         t = rep_once(t, "\t\t\tcase 26:\t\t\t\t/* pg_dumpplus: --where=PATTERN:FILTER */\n"
@@ -1137,10 +1139,13 @@ find_unquoted_char(const char *s, char sep)
             '\t\t\tcase 28:\t\t\t\tpgdp_dry_run = true; break;\n'
             '\t\t\tcase 29:\t\t\t\tpgdp_plan_format = pg_strdup(optarg); pgdp_plan_format_set = true; break;\n'
             '\t\t\tcase 30:\t\t\t\tprintf("pg_dumpplus project %s; PostgreSQL %s; source %s\\n", PGDUMPPLUS_PROJECT_VERSION, PG_VERSION, PGDUMPPLUS_SOURCE_COMMIT); exit(0);\n',
-            '\t\t\tcase 31:\t\t\t\tpgdp_profile_path = pg_strdup(optarg); break;\\n',
+            '\t\t\tcase 31:\t\t\t\tpgdp_profile_path = pg_strdup(optarg); break;\\n'
+            '\t\t\tcase 32:\t\t\t\tpgdp_stats = true; pg_logging_increase_verbosity(); break;\\n',
             "dm-case")
         t = t.replace(r"pgdp_profile_path = pg_strdup(optarg); break;\n",
                       "pgdp_profile_path = pg_strdup(optarg); break;\n")
+        t = t.replace(r"pgdp_stats = true; pg_logging_increase_verbosity(); break;\n",
+                      "pgdp_stats = true; pg_logging_increase_verbosity(); break;\n")
         # 5d: help — --where satirindan once
         where_help = 'printf(_("  --where=PATTERN:FILTER   dump only rows matching SQL FILTER for\\n"'
         t = rep_once(t, where_help,
@@ -1150,6 +1155,7 @@ find_unquoted_char(const char *s, char sep)
             'printf(_("  --plan-format=text|json      select dry-run plan format\\n"));\n'
             'printf(_("  --build-info                 print project, upstream and source identity\\n"));\n'
             'printf(_("  --profile=FILE               load a strict JSON profile (schema_version 1)\\n"));\n'
+            'printf(_("  --stats                      show rows and exported bytes after each table\\n"));\n'
             + where_help, "dm-help")
         # 5e: cozum blogu — --where cozum bloğunun ardina
         mw = re.search(r"if \(tabledata_where_oids\.head == NULL\)\n[ \t]*\S[^\0]*?\n[ \t]*\}\n", t)
@@ -1195,7 +1201,36 @@ find_unquoted_char(const char *s, char sep)
             "\t\t\telse\n"
             "\t\t\t\tappendPQExpBufferStr(q, fmtId(tbinfo->attnames[i]));\n\t\t}",
             "dm-inserts")
-        # 6e: makeTableDataInfo'da dogrulama — filtercond blogunun sonrasina
+        # 6e: --stats COPY akisi. Satir sayisi COPY'nin kendi COMMAND_OK
+        # sonucundan, byte sayisi WriteData'a giden buffer uzunluklarindan gelir.
+        # Ek COUNT/EXPLAIN veya payload taramasi yapilmaz.
+        t = rep_once(t,
+            "\tint\t\t\tret;\n\tchar\t   *copybuf;",
+            "\tint\t\t\tret;\n"
+            "\tuint64\t\tpgdp_stats_bytes = 0;\t/* pg_dumpplus --stats */\n"
+            "\tchar\t\t*copybuf;",
+            "ds-copy-locals")
+        t = rep_once(t,
+            "\t\tif (copybuf)\n\t\t{\n\t\t\tWriteData(fout, copybuf, ret);",
+            "\t\tif (copybuf)\n\t\t{\n\t\t\tWriteData(fout, copybuf, ret);\n"
+            "\t\t\tif (pgdp_stats)\n"
+            "\t\t\t\tpgdp_stats_bytes += (uint64) ret;",
+            "ds-copy-bytes")
+        stats_error = "fatal" if PG13 else "pg_fatal"
+        t = rep_once(t,
+            "\tPQclear(res);\n\n\t/* Do this to ensure we've pumped libpq back to idle state */",
+            "\tif (pgdp_stats)\n"
+            "\t{\n"
+            "\t\tconst char *pgdp_stats_rows = PQcmdTuples(res);\n\n"
+            f"\t\tif (pgdp_stats_rows == NULL || pgdp_stats_rows[0] == '\\0')\n"
+            f"\t\t\t{stats_error}(\"--stats could not read COPY row count for table \\\"%s\\\"\", classname);\n"
+            "\t\tpg_log_info(\"table \\\"%s.%s\\\": rows=%s, bytes=\" UINT64_FORMAT,\n"
+            "\t\t\t\t\ttbinfo->dobj.namespace->dobj.name, classname,\n"
+            "\t\t\t\t\tpgdp_stats_rows, pgdp_stats_bytes);\n"
+            "\t}\n"
+            "\tPQclear(res);\n\n\t/* Do this to ensure we've pumped libpq back to idle state */",
+            "ds-copy-report")
+        # 6f: makeTableDataInfo'da dogrulama — filtercond blogunun sonrasina
         anchor6e = "\t\t\ttdinfo->filtercond = psprintf(\"WHERE (%s)\", filter_clause);\n\t}"
         t = rep_once(t, anchor6e, anchor6e + "\n" + MASK_VALIDATE_C.replace("@@FM@@", fm_err), "dm-validate")
         wr(d, t); changed.append(d)
