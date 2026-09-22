@@ -172,15 +172,21 @@ sessizce yok sayılmaz.
 
 ## Dışa aktarım istatistikleri
 
-`--stats` tamamlanan her tablo için stderr üzerinde gerçek satır sayısını,
-sıkıştırılmamış veri boyutunu ve tablo aktarım süresini gösterir:
+`--stats`, stderr üzerinde başlangıçta yerel zaman damgasını ve bağlı PostgreSQL
+sunucu sürümünü; tamamlanan her tablo için gerçek satır sayısını,
+sıkıştırılmamış veri boyutunu ve tablo aktarım süresini; en sonda ise bitiş
+zamanını ve monotonic toplam süreyi gösterir:
 
 ```text
+pg_dumpplus: export started: 2026-09-22 14:35:08 +0300; database server version: 17.11
 pg_dumpplus: table "public.orders": rows=125438, size=84.00 MB, duration=2m 14s
+pg_dumpplus: export completed: 2026-09-22 14:37:22 +0300; elapsed: 2m14s
 ```
 
 Boyut birimleri ikilik biçimdedir (`B`, `KB`, `MB`, `GB`, `TB`). Şema, index,
 sequence ve diğer metadata nesneleri için tablo istatistik satırı üretilmez.
+Satırlar stderr'e yazıldığı için `2>&1 | tee export.log` ile hem ekranda hem
+log dosyasında görünür; dump arşivine karışmaz.
 
 ## Geri yükleme
 

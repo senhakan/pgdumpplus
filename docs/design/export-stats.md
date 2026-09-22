@@ -1,8 +1,8 @@
 # Export-time table statistics: implementation and decision plan
 
-Status: IN PROGRESS. S1/S2 implementation and cross-version verification are
-complete; the required host-scale timing experiment and owner continuation
-decision remain before release integration.
+Status: Released table statistics baseline; export start/completion summary is
+implemented and locally verified, pending normal matching-client CI and release
+gates. The historical S1--S6 evidence remains in `TASKS.md`.
 Owner-facing requirement and decision report language: Turkish.
 Reviewed: 2026-09-21; repository baseline: `5369a348ad95d39c81839569892e3890850f9f31`.
 Manifest at review: project 2.2.0, PostgreSQL 13–18, existing x86_64 targets.
@@ -12,9 +12,12 @@ It takes precedence over the older default roadmap for this feature only.
 
 ## 1. Requirement and scope
 
-One argument, `--stats`, prints actual exported rows and uncompressed exported
-data bytes for each completed table on stderr. It works without `-v`; adding
-`-v` preserves ordinary verbose messages and adds the same completion lines once.
+One argument, `--stats`, prints an export start banner, actual exported rows and
+uncompressed exported data bytes for each completed table, and a successful
+export completion banner on stderr. The start banner contains the connected
+server version and local timestamp; the completion banner contains a local
+timestamp and monotonic elapsed duration. It works without `-v`; adding `-v`
+preserves ordinary verbose messages and adds the same completion lines once.
 Default export behavior and output remain unchanged when the flag is absent.
 No COUNT, EXPLAIN, reltuples, relation-size query, extra connection, pre-scan,
 payload reparse, or second execution of filters/masks is permitted in production.
@@ -26,7 +29,9 @@ pg_dumpplus --stats -v -Fc -Z 5 -U postgres -d example -f example.dump 2>example
 ```
 
 ```text
+pg_dumpplus: export started: 2026-09-22 14:35:08 +0300; database server version: 17.11
 pg_dumpplus: table "public.orders": rows=125438, size=84.00 MB, duration=2m 14s
+pg_dumpplus: export completed: 2026-09-22 14:37:22 +0300; elapsed: 2m14s
 ```
 
 `rows` has no locale grouping. `size` is formatted with binary units (`B`, `KB`,
@@ -37,6 +42,9 @@ in identifiers so each completion remains one physical log line. Never print
 row values, filter literals, mask expressions or connection credentials.
 No percent-complete, live row updates, ETA, JSON/CSV CLI, stats file option or
 cross-worker aggregate is required in version one. Logs use ordinary redirection.
+The whole-export timer starts after the main connection and setup succeed, and
+ends only after `CloseArchive()` succeeds; connection-establishment time is not
+included. Failed exports do not print a successful completion banner.
 
 The exported-byte measure is the serialized table data before archive compression:
 COPY data buffers only (including their field separators and record terminators),

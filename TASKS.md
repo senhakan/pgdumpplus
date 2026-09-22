@@ -26,6 +26,23 @@ matrix; no private host or credential is included.
 | S4 | DONE | Owner approved continuation after timing report |
 | S5 | DONE | Stats display integration, docs and package verification |
 | S6 | DONE | v2.2.0 matrix, TAP, provenance and release verification complete |
+| S5R | IN_PROGRESS | `--stats` export start/completion summary; local build and disposable runtime verification complete, full CI/release gates pending |
+
+S5R implementation evidence (2026-09-22, working tree): `--stats` now emits a
+single leader-process start line after the main connection/setup succeeds, with
+the local timestamp and `server_version`, and emits the completion line only
+after `CloseArchive()` succeeds. Its elapsed value uses the existing monotonic
+timer style; a failed or incomplete export cannot be labelled as completed.
+Pristine PG17.11 and PG13.23 patcher/idempotence checks passed. A fresh PG17.11
+Debian package build completed. In a disposable PostgreSQL 17.11 Docker
+fixture, the packaged client created a custom archive with the three lines in
+order (start, table, completion), `pg_restore` restored it successfully and
+the destination table contained 2 rows. The full isolated suite was then rerun
+with matching PG17.11 `pg_dump`, `psql`, `pg_restore` and libpq clients:
+54 passed, 0 failed, including the new run-summary assertion and custom/plain/
+directory restore paths. No client installation, existing database, real
+dataset, private host or credential was changed. Exact next step: run the
+normal cross-version CI matrix, then apply the release gates before publishing.
 
 S0 evidence (2026-09-21): inspected local patched PG17.11 COPY/INSERT/archiver paths
 and official libpq result documentation; `git diff --check` and local document-link

@@ -1108,6 +1108,8 @@ find_unquoted_char(const char *s, char sep)
             "static DumpMaskEntry *dump_mask_entries = NULL;\n"
             "static bool pgdp_dry_run = false;\n"
             "static bool pgdp_stats = false;\n"
+            "static bool pgdp_export_stats_started = false;\n"
+            "static instr_time pgdp_export_stats_started_at;\n"
             "static const char *pgdp_plan_format = \"text\";\n"
             "static bool pgdp_plan_format_set = false;\n"
             "static const char *pgdp_profile_path = NULL;\n"
@@ -1118,8 +1120,13 @@ find_unquoted_char(const char *s, char sep)
             "static void pgdp_emit_plan(TableInfo *tblinfo, int numTables);\n"
             "static const char *fmtMaskedColumnList(const TableInfo *ti,\n"
 			"\t\t\t\t\t\t\t\t\t\t\tPQExpBuffer buffer);\n"
-			"static void validate_all_mask_entries(TableInfo *tblinfo, int numTables);",
+			"static void validate_all_mask_entries(TableInfo *tblinfo, int numTables);\n"
+            "static void pgdp_report_export_start(Archive *fout);\n"
+            "static void pgdp_report_export_complete(void);",
             "dm-statics")
+        t = rep_once(t, '#include <unistd.h>\n#include <ctype.h>',
+            '#include <unistd.h>\n#include <ctype.h>\n#include <time.h>',
+            "dm-time-include")
         # 5b: long_options 27 (26=where'den sonra)
         t = rep_once(t, '{"where", required_argument, NULL, 26},\t/* pg_dumpplus */',
             '{"where", required_argument, NULL, 26},\t/* pg_dumpplus */\n'
@@ -1166,6 +1173,72 @@ find_unquoted_char(const char *s, char sep)
                       "pg_logging_set_level(PG_LOG_INFO);\n"
                       "#endif\n"
                       "break;\n")
+        run_summary_helpers = r'''
+/* pg_dumpplus: whole-export metadata shown only with --stats. */
+static void
+pgdp_format_export_timestamp(char *buf, size_t buflen)
+{
+	time_t		now = time(NULL);
+	struct tm  *tm = localtime(&now);
+
+	if (tm == NULL || strftime(buf, buflen, "%Y-%m-%d %H:%M:%S %z", tm) == 0)
+		strlcpy(buf, "unknown", buflen);
+}
+
+static void
+pgdp_format_export_duration(double seconds, char *buf, size_t buflen)
+{
+	uint64 total_ms = (uint64) (seconds * 1000.0 + 0.5);
+	uint64 hours = total_ms / (60 * 60 * 1000);
+	uint64 minutes = (total_ms / (60 * 1000)) % 60;
+	uint64 whole_seconds = (total_ms / 1000) % 60;
+	uint64 milliseconds = total_ms % 1000;
+
+	if (hours > 0)
+		snprintf(buf, buflen, UINT64_FORMAT "h" UINT64_FORMAT "m" UINT64_FORMAT "s", hours, minutes, whole_seconds);
+	else if (minutes > 0)
+		snprintf(buf, buflen, UINT64_FORMAT "m" UINT64_FORMAT "s", minutes, whole_seconds);
+	else if (whole_seconds > 0)
+		snprintf(buf, buflen, UINT64_FORMAT "s", whole_seconds);
+	else
+		snprintf(buf, buflen, UINT64_FORMAT "ms", milliseconds);
+}
+
+static void
+pgdp_report_export_start(Archive *fout)
+{
+	char		timebuf[64];
+	const char *server_version;
+
+	INSTR_TIME_SET_CURRENT(pgdp_export_stats_started_at);
+	pgdp_export_stats_started = true;
+	pgdp_format_export_timestamp(timebuf, sizeof(timebuf));
+	server_version = PQparameterStatus(GetConnection(fout), "server_version");
+	pg_log_info("export started: %s; database server version: %s",
+				timebuf, server_version ? server_version : "unknown");
+}
+
+static void
+pgdp_report_export_complete(void)
+{
+	instr_time now;
+	char		timebuf[64];
+	char		durationbuf[64];
+
+	if (!pgdp_export_stats_started)
+		return;
+	INSTR_TIME_SET_CURRENT(now);
+	pgdp_format_export_timestamp(timebuf, sizeof(timebuf));
+	pgdp_format_export_duration(INSTR_TIME_GET_DOUBLE(now) -
+							INSTR_TIME_GET_DOUBLE(pgdp_export_stats_started_at),
+							durationbuf, sizeof(durationbuf));
+	pg_log_info("export completed: %s; elapsed: %s", timebuf, durationbuf);
+}
+
+'''
+        t = rep_once(t, "static void\nhelp(const char *progname)\n{",
+            run_summary_helpers + "static void\nhelp(const char *progname)\n{",
+            "dm-run-summary-helpers")
         # 5d: help — --where satirindan once
         where_help = 'printf(_("  --where=PATTERN:FILTER   dump only rows matching SQL FILTER for\\n"'
         t = rep_once(t, where_help,
@@ -1294,6 +1367,18 @@ find_unquoted_char(const char *s, char sep)
                 "\t\t\t\t\t\t archiveMode, setupDumpWorker);\n\n"
                 "\tfout->pgdp_stats_enabled = pgdp_stats;",
                 "dm-stats-enabled-pg13")
+        t = rep_once(t,
+            "\tConnectDatabase(fout, &dopt.cparams, false);\n\tsetup_connection(fout, dumpencoding, dumpsnapshot, use_role);",
+            "\tConnectDatabase(fout, &dopt.cparams, false);\n\tsetup_connection(fout, dumpencoding, dumpsnapshot, use_role);\n\n"
+            "\tif (pgdp_stats)\n"
+            "\t\tpgdp_report_export_start(fout);",
+            "dm-run-summary-start")
+        t = rep_once(t,
+            "\tCloseArchive(fout);\n\n\texit_nicely(0);",
+            "\tCloseArchive(fout);\n\n"
+            "\tif (pgdp_stats)\n"
+            "\t\tpgdp_report_export_complete();\n\n\texit_nicely(0);",
+            "dm-run-summary-complete")
         t = rep_once(t,
             "\tint\t\t\trows_this_statement = 0;\n\n\t/* Temporary allows to access to foreign tables to dump data */",
             "\tint\t\t\trows_this_statement = 0;\n\n"

@@ -303,16 +303,23 @@ explicitly; it is never silently ignored.
 
 ## Export statistics
 
-Add `--stats` to print completed table-export statistics on stderr. The line
-reports actual exported rows, uncompressed serialized data size and elapsed
-table duration; it does not pre-count or run a second query:
+Add `--stats` to print an export start banner, completed table-export
+statistics, and a final completion banner on stderr. The start banner includes
+the connected PostgreSQL server version and local timestamp; the final banner
+includes its local timestamp and monotonic elapsed export duration. Table lines
+report actual exported rows, uncompressed serialized data size and elapsed
+table duration; this does not pre-count or run a second query:
 
 ```text
+pg_dumpplus: export started: 2026-09-22 14:35:08 +0300; database server version: 17.11
 pg_dumpplus: table "public.orders": rows=125438, size=84.00 MB, duration=2m 14s
+pg_dumpplus: export completed: 2026-09-22 14:37:22 +0300; elapsed: 2m14s
 ```
 
 Sizes use binary units (`B`, `KB`, `MB`, `GB`, `TB`). Schema, index, sequence
-and other metadata entries do not produce table statistics.
+and other metadata entries do not produce table statistics. Because these lines
+use stderr, `2>&1 | tee export.log` shows them on screen and records them without
+writing them into the dump archive.
 
 Animated synthetic example:
 

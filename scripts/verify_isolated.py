@@ -324,6 +324,31 @@ class Suite:
         )
         self.equal(int(filtered_match.group(2)), expected_filtered)
 
+    def stats_run_summary(self):
+        """--stats emits one run banner and a successful whole-export summary."""
+        _, result = self.dump(["--stats", "-t", "public.stats_probe"], fmt="p")
+        start = re.search(
+            r"pg_dumpplus: export started: "
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [+-]\d{4}; "
+            r"database server version: [^\n]+",
+            result.stderr,
+        )
+        completed = re.search(
+            r"pg_dumpplus: export completed: "
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [+-]\d{4}; "
+            r"elapsed: (?:\d+ms|\d+s|\d+m\d+s|\d+h\d+m\d+s)",
+            result.stderr,
+        )
+        table = re.search(r'table "public\.stats_probe":', result.stderr)
+        if not start or not completed or not table:
+            raise AssertionError("missing --stats run summary: " + result.stderr)
+        if not (start.start() < table.start() < completed.start()):
+            raise AssertionError("--stats run summary has unexpected order: " + result.stderr)
+
+        _, without_stats = self.dump(["-t", "public.stats_probe"], fmt="p")
+        if "export started:" in without_stats.stderr or "export completed:" in without_stats.stderr:
+            raise AssertionError("run summary appeared without --stats: " + without_stats.stderr)
+
     def stats_insert(self):
         """--stats counts INSERT tuples and emitted SQL bytes independently."""
         path, result = self.dump([
@@ -423,6 +448,7 @@ class Suite:
         self.case("dry-run option combinations fail clearly", self.dry_run_option_errors)
         self.case("compiled JSON profile resolves and restores", self.profile_roundtrip)
         self.case("COPY export stats count rows and bytes", self.stats_copy)
+        self.case("--stats export start and completion summary", self.stats_run_summary)
         self.case("INSERT export stats count tuples and SQL bytes", self.stats_insert)
         self.case("concurrent update keeps one dump snapshot", self.snapshot_consistency)
         self.case("preset on non-text column fails before export", lambda: self.error(
