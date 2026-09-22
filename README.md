@@ -130,9 +130,18 @@ pg_dumpplus --version
 pg_dumpplus --build-info
 ```
 
-For an RPM package, use `sudo dnf install ./<package.rpm>`. Packages contain
-precompiled clients and a private `libpq`; no compiler, Python, or PostgreSQL
-server installation is required. The package manager installs runtime libraries.
+For an RPM package, use `sudo dnf install ./<package.rpm>`; do not pass a
+`.tar.gz` archive to `rpm -Uvh`. Tarballs are portable layout archives and can
+be installed without the package database:
+
+```bash
+sudo tar -xzf pgdumpplus-13-13.23-el8-linux-x86_64.tar.gz -C /
+pg_dumpplus-13 --version
+```
+
+Packages contain precompiled clients and a private `libpq`; no compiler,
+Python, or PostgreSQL server installation is required. The package manager
+installs runtime libraries.
 The future signed APT/RPM channel contract is documented in
 [`docs/distribution.md`](docs/distribution.md); until a hosted channel is
 independently verified, use the signed standalone release assets.
