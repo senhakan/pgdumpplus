@@ -1367,12 +1367,20 @@ pgdp_report_export_complete(void)
                 "\t\t\t\t\t\t archiveMode, setupDumpWorker);\n\n"
                 "\tfout->pgdp_stats_enabled = pgdp_stats;",
                 "dm-stats-enabled-pg13")
-        t = rep_once(t,
-            "\tConnectDatabase(fout, &dopt.cparams, false);\n\tsetup_connection(fout, dumpencoding, dumpsnapshot, use_role);",
-            "\tConnectDatabase(fout, &dopt.cparams, false);\n\tsetup_connection(fout, dumpencoding, dumpsnapshot, use_role);\n\n"
-            "\tif (pgdp_stats)\n"
-            "\t\tpgdp_report_export_start(fout);",
-            "dm-run-summary-start")
+        if "\tConnectDatabase(fout, &dopt.cparams, false);" in t:
+            t = rep_once(t,
+                "\tConnectDatabase(fout, &dopt.cparams, false);\n\tsetup_connection(fout, dumpencoding, dumpsnapshot, use_role);",
+                "\tConnectDatabase(fout, &dopt.cparams, false);\n\tsetup_connection(fout, dumpencoding, dumpsnapshot, use_role);\n\n"
+                "\tif (pgdp_stats)\n"
+                "\t\tpgdp_report_export_start(fout);",
+                "dm-run-summary-start")
+        else:
+            t = rep_once(t,
+                "\tConnectDatabaseAhx(fout, &dopt.cparams, false);\n\tsetup_connection(fout, dumpencoding, dumpsnapshot, use_role);",
+                "\tConnectDatabaseAhx(fout, &dopt.cparams, false);\n\tsetup_connection(fout, dumpencoding, dumpsnapshot, use_role);\n\n"
+                "\tif (pgdp_stats)\n"
+                "\t\tpgdp_report_export_start(fout);",
+                "dm-run-summary-start")
         t = rep_once(t,
             "\tCloseArchive(fout);\n\n\texit_nicely(0);",
             "\tCloseArchive(fout);\n\n"

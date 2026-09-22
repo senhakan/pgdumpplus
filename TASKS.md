@@ -44,6 +44,16 @@ directory restore paths. No client installation, existing database, real
 dataset, private host or credential was changed. Exact next step: run the
 normal cross-version CI matrix, then apply the release gates before publishing.
 
+S5R matrix follow-up (2026-09-22): normal push CI
+[35738522495](https://github.com/senhakan/pgdumpplus/actions/runs/35738522495)
+passed PG17.11 verification, EL9 RPM and Ubuntu package/smoke jobs. The first
+full matrix [35738927154](https://github.com/senhakan/pgdumpplus/actions/runs/35738927154)
+identified a PostgreSQL 18-only source-shape change: `ConnectDatabase()` is
+now `ConnectDatabaseAhx()`, so the new start-summary patch anchor did not
+match. PG13/17 and a fresh pristine PG18.6 patcher suite pass after accepting
+both upstream forms; a fresh PG18.6 Debian package build also passes. The full
+matrix must be rerun from this follow-up before S5R can be marked DONE.
+
 S0 evidence (2026-09-21): inspected local patched PG17.11 COPY/INSERT/archiver paths
 and official libpq result documentation; `git diff --check` and local document-link
 checks pass. No stats implementation, benchmark, server mutation or publication
