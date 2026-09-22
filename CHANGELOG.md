@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.1
+
+- Fixed automated PostgreSQL major-version detection on RPM-based systems
+  where PostgreSQL binaries are installed outside root's `PATH` (for example,
+  `/usr/pgsql-13/bin`). The installer now checks standard PostgreSQL binary
+  locations and the `postgres` service account before requiring `--pg-major`.
+
 ## 2.2.0
 
 - Added `--stats` table completion lines with exported rows, human-readable

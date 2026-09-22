@@ -109,6 +109,11 @@ curl -fsSL https://github.com/senhakan/pgdumpplus/releases/latest/download/insta
   | bash -s -- --pg-major 17
 ```
 
+On RPM-based installations, the installer also checks PostgreSQL's standard
+versioned paths (such as `/usr/pgsql-13/bin`) and queries the `postgres` service
+account, so root's `PATH` does not need to contain `psql`. Use `--pg-major` only
+when the server is not running or automatic detection is intentionally bypassed.
+
 The release-asset URL is intentionally stable and shorter than a raw source
 URL. The script remains versioned in the repository at
 [`scripts/install-pgdumpplus.sh`](scripts/install-pgdumpplus.sh).

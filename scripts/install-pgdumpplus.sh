@@ -83,17 +83,39 @@ case "$OS_ID" in
 esac
 
 detect_pg_major() {
-  local value=""
-  if command -v psql >/dev/null 2>&1; then
-    value="$(psql -X -Atqc 'SHOW server_version_num' 2>/dev/null || true)"
+  local value="" psql_bin="" pg_config_bin="" candidate=""
+  local candidates=(
+    "$(command -v psql 2>/dev/null || true)"
+    /usr/pgsql-*/bin/psql
+    /usr/lib/postgresql/*/bin/psql
+    /usr/local/pgsql/bin/psql
+  )
+  for candidate in "${candidates[@]}"; do
+    [[ -x "$candidate" ]] || continue
+    psql_bin="$candidate"
+    break
+  done
+  if [[ -n "$psql_bin" ]]; then
+    value="$($psql_bin -X -Atqc 'SHOW server_version_num' 2>/dev/null || true)"
     [[ "$value" =~ ^(1[3-8])[0-9]{4}$ ]] && printf '%s\n' "${BASH_REMATCH[1]}" && return 0
+    if [[ $EUID -eq 0 && -x "$(command -v runuser 2>/dev/null || true)" ]] && id postgres >/dev/null 2>&1; then
+      value="$(runuser -u postgres -- "$psql_bin" -X -Atqc 'SHOW server_version_num' 2>/dev/null || true)"
+      [[ "$value" =~ ^(1[3-8])[0-9]{4}$ ]] && printf '%s\n' "${BASH_REMATCH[1]}" && return 0
+    fi
   fi
-  if [[ $EUID -eq 0 && -x "$(command -v runuser 2>/dev/null || true)" ]]; then
-    value="$(runuser -u postgres -- psql -X -Atqc 'SHOW server_version_num' 2>/dev/null || true)"
-    [[ "$value" =~ ^[0-9]+$ ]] && printf '%s\n' "${value:0:${#value}-2}" && return 0
-  fi
-  if command -v pg_config >/dev/null 2>&1; then
-    value="$(pg_config --version 2>/dev/null || true)"
+  local pg_config_candidates=(
+    "$(command -v pg_config 2>/dev/null || true)"
+    /usr/pgsql-*/bin/pg_config
+    /usr/lib/postgresql/*/bin/pg_config
+    /usr/local/pgsql/bin/pg_config
+  )
+  for candidate in "${pg_config_candidates[@]}"; do
+    [[ -x "$candidate" ]] || continue
+    pg_config_bin="$candidate"
+    break
+  done
+  if [[ -n "$pg_config_bin" ]]; then
+    value="$($pg_config_bin --version 2>/dev/null || true)"
     [[ "$value" =~ PostgreSQL[[:space:]]+([0-9]+) ]] && printf '%s\n' "${BASH_REMATCH[1]}" && return 0
   fi
   if [[ "$PACKAGE_FORMAT" == rpm ]] && command -v rpm >/dev/null 2>&1; then
