@@ -1,6 +1,6 @@
 # Execution tracker
 
-Updated: 2026-09-21. Specification: [PLAN.md](PLAN.md).
+Updated: 2026-09-22. Specification: [PLAN.md](PLAN.md).
 Statuses: READY, IN_PROGRESS, BLOCKED (dependency stated), DONE (evidence required).
 
 ## Current request: export-time statistics planning
@@ -8,6 +8,14 @@ Statuses: READY, IN_PROGRESS, BLOCKED (dependency stated), DONE (evidence requir
 Specification: [export-stats.md](docs/design/export-stats.md).
 Local review baseline `5369a348ad95d39c81839569892e3890850f9f31`, manifest 2.2.0.
 Historical release claims below are evidence ledger entries, not current state.
+
+Installer maintenance evidence (2026-09-22): on RPM-based hosts where PGDG
+installs PostgreSQL under `/usr/pgsql-<major>/bin`, root's `PATH` may not expose
+`psql`. Commit `b39d376` updates the installer to inspect standard versioned
+binary paths, query the `postgres` service account when available, and retain
+the package-manager fallback. `bash -n`, public documentation checks and
+`git diff --check` pass. The fix is scheduled for the v2.2.1 full release
+matrix; no private host or credential is included.
 
 | ID | Status | Dependency / required result |
 | --- | --- | --- |
